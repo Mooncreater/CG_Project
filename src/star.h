@@ -3,7 +3,7 @@
 #include <glm/glm.hpp>
 #include <vector>
 
-#include "../base/gl_utility.h"
+#include "base/gl_utility.h"
 
 class Star {
 public:

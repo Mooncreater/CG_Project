@@ -2,8 +2,8 @@
 
 #include <memory>
 
-#include "../base/application.h"
-#include "../base/glsl_program.h"
+#include "base/application.h"
+#include "base/glsl_program.h"
 
 #include "star.h"
 

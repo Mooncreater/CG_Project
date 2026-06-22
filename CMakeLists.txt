@@ -22,7 +22,7 @@ file( GLOB PROJECT_HDR ${SOURCE_PATH}/*.h)
 file( GLOB PROJECT_SRC ${SOURCE_PATH}/*.cpp)
 
 # generate project 
-add_executable(final_project ${BASE_HDR} ${BASE_SRC} ${PROJECT_HDR} ${PROJECT_SRC})
+add_executable(final_project ${BASE_HDR} ${BASE_SRC} ${PROJECT_HDR} ${PROJECT_SRC} ${THIRD_PARTY_LIBRARY_PATH}/tinyobjloader/tiny_obj_loader.cc)
 
 if(WIN32)
 set_target_properties(${PROJECT_NAME} PROPERTIES
@@ -39,17 +39,28 @@ endif()
 
 # include third party headers
 
+
+
 target_include_directories(
     final_project PUBLIC
-    ${THIRD_PARIY_LIBRARY_PATH}/glfw/include
-    ${THIRD_PARIY_LIBRARY_PATH}/glad/include
-    ${THIRD_PARIY_LIBRARY_PATH}/glm
-    ${THIRD_PARIY_LIBRARY_PATH}/imgui
-    ${THIRD_PARIY_LIBRARY_PATH}/stb
+    ${CMAKE_SOURCE_DIR}/src
+    ${CMAKE_SOURCE_DIR}/src/base
+    ${THIRD_PARTY_LIBRARY_PATH}/tinyobjloader
+    ${THIRD_PARTY_LIBRARY_PATH}/glfw/include
+    ${THIRD_PARTY_LIBRARY_PATH}/glad/include
+    ${THIRD_PARTY_LIBRARY_PATH}/glm
+    ${THIRD_PARTY_LIBRARY_PATH}/imgui
+    ${THIRD_PARTY_LIBRARY_PATH}/stb
 )
+
+target_compile_definitions(final_project PRIVATE _USE_MATH_DEFINES)
 
 # link third party libraries
 target_link_libraries(final_project PUBLIC glfw glad glm imgui stb)
+
+
+
+
 
 
 
