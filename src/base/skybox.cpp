@@ -19,21 +19,16 @@ SkyBox::SkyBox(const std::vector<std::string>& textureFilenames) {
                           -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f,
                           1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f};
 
-    // create vao and vbo
     glGenVertexArrays(1, &_vao);
     glGenBuffers(1, &_vbo);
-
     glBindVertexArray(_vao);
     glBindBuffer(GL_ARRAY_BUFFER, _vbo);
     glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices, GL_STATIC_DRAW);
-
     glEnableVertexAttribArray(0);
     glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-
     glBindVertexArray(0);
 
     try {
-        // init texture
         _texture.reset(new ImageTextureCubemap(textureFilenames));
 
         const char* vsCode =
@@ -44,7 +39,8 @@ SkyBox::SkyBox(const std::vector<std::string>& textureFilenames) {
             "uniform mat4 view;\n"
             "void main() {\n"
             "   texCoord = aPosition;\n"
-            "   gl_Position = (projection * view * vec4(aPosition, 1.0f)).xyww;\n"
+            "   vec4 pos = projection * mat4(mat3(view)) * vec4(aPosition, 1.0);\n"
+            "   gl_Position = pos.xyww;\n"
             "}\n";
 
         const char* fsCode =
@@ -64,14 +60,6 @@ SkyBox::SkyBox(const std::vector<std::string>& textureFilenames) {
         cleanup();
         throw;
     }
-
-    GLenum error = glGetError();
-    if (error != GL_NO_ERROR) {
-        std::stringstream ss;
-        ss << "skybox creation failure, (code " << error << ")";
-        cleanup();
-        throw std::runtime_error(ss.str());
-    }
 }
 
 SkyBox::SkyBox(SkyBox&& rhs) noexcept
@@ -81,26 +69,22 @@ SkyBox::SkyBox(SkyBox&& rhs) noexcept
     rhs._vbo = 0;
 }
 
-SkyBox::~SkyBox() {
-    cleanup();
-}
+SkyBox::~SkyBox() { cleanup(); }
 
 void SkyBox::draw(const glm::mat4& projection, const glm::mat4& view) {
-    // TODO:: draw skybox
-    // write your code here
-    // -----------------------------------------------
-    // ...
-    // -----------------------------------------------
+    glDepthFunc(GL_LEQUAL);
+    _shader->use();
+    _shader->setUniformMat4("projection", projection);
+    // Strip translation: skybox should follow camera rotation only
+    glm::mat4 viewNoTrans = glm::mat4(glm::mat3(view));
+    _shader->setUniformMat4("view", viewNoTrans);
+    _texture->bind(0);
+    glBindVertexArray(_vao);
+    glDrawArrays(GL_TRIANGLES, 0, 36);
+    glDepthFunc(GL_LESS);
 }
 
 void SkyBox::cleanup() {
-    if (_vbo != 0) {
-        glDeleteBuffers(1, &_vbo);
-        _vbo = 0;
-    }
-
-    if (_vao != 0) {
-        glDeleteVertexArrays(1, &_vao);
-        _vao = 0;
-    }
+    if (_vbo != 0) { glDeleteBuffers(1, &_vbo); _vbo = 0; }
+    if (_vao != 0) { glDeleteVertexArrays(1, &_vao); _vao = 0; }
 }

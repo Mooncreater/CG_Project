@@ -35,6 +35,8 @@ public:
 
     void unuse();
 
+    GLuint getHandle() const { return _handle; }
+
     int getUniformBlockSize(const std::string& name) const;
 
     int getUniformBlockIndex(const std::string& name) const;

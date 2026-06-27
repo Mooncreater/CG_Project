@@ -43,12 +43,36 @@ void TextureCubemap::setParamterInt(GLenum name, int value) const {
 ImageTextureCubemap::ImageTextureCubemap(const std::vector<std::string>& filepaths)
     : _uris(filepaths) {
     assert(filepaths.size() == 6);
-    // TODO: load six images and generate the texture cubemap
-    // hint: you can refer to Texture2D(const std::string&) for image loading
-    // write your code here
-    // -----------------------------------------------
-    // ...
-    // -----------------------------------------------
+
+    stbi_set_flip_vertically_on_load(false);
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, _handle);
+
+    for (int i = 0; i < 6; ++i) {
+        int width, height, channels;
+        unsigned char* data = stbi_load(filepaths[i].c_str(), &width, &height, &channels, 0);
+        if (!data) {
+            glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
+            throw std::runtime_error("Failed to load cubemap: " + filepaths[i]);
+        }
+
+        GLenum format = GL_RGB;
+        if (channels == 4) format = GL_RGBA;
+        else if (channels == 1) format = GL_RED;
+
+        glTexImage2D(GL_TEXTURE_CUBE_MAP_POSITIVE_X + i, 0, (GLint)format,
+                     width, height, 0, format, GL_UNSIGNED_BYTE, data);
+
+        stbi_image_free(data);
+    }
+
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+    glTexParameteri(GL_TEXTURE_CUBE_MAP, GL_TEXTURE_WRAP_R, GL_CLAMP_TO_EDGE);
+
+    glBindTexture(GL_TEXTURE_CUBE_MAP, 0);
 }
 
 ImageTextureCubemap::ImageTextureCubemap(ImageTextureCubemap&& rhs) noexcept
