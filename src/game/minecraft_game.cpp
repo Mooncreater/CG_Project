@@ -971,7 +971,6 @@ void MinecraftGame::computeGhost() {
         origin = _playerPos + glm::vec3(0, 1.7f, 0);
         dir = fpForward();
     } else {
-        // Third-person: unproject mouse cursor to world ray
         float mx = glm::clamp(_input.mouse.move.xNow, 0.0f, (float)_windowWidth - 1.0f);
         float my = (float)_windowHeight - glm::clamp(_input.mouse.move.yNow, 0.0f, (float)_windowHeight - 1.0f);
         auto proj = glm::perspective(glm::radians(60.f), (float)_windowWidth / _windowHeight, 0.1f, 200.f);
@@ -984,11 +983,10 @@ void MinecraftGame::computeGhost() {
     }
     for (float t = 0.5f; t < 40.0f; t += 0.5f) {
         glm::ivec3 gp = glm::ivec3(glm::round(origin + dir * t));
+        // Check blocks
         auto it = _blocks.find(gp);
         if (it != _blocks.end() && it->second != BT_WATER) {
-            _ghostHit = gp;
-            _ghostHitValid = true;
-            // Compute adjacent empty position (for placement preview)
+            _ghostHit = gp; _ghostHitValid = true;
             glm::vec3 hp = origin + dir * t;
             glm::vec3 hn = glm::vec3(gp) - hp;
             float ax = fabsf(hn.x), ay = fabsf(hn.y), az = fabsf(hn.z);
@@ -996,9 +994,24 @@ void MinecraftGame::computeGhost() {
             if (ax >= ay && ax >= az)      adj.x += (hn.x > 0 ? -1 : 1);
             else if (ay >= ax && ay >= az) adj.y += (hn.y > 0 ? -1 : 1);
             else                           adj.z += (hn.z > 0 ? -1 : 1);
-            if (_blocks.find(adj) == _blocks.end()) {
-                _ghostPlace = adj;
-                _ghostPlaceValid = true;
+            if (_blocks.find(adj) == _blocks.end() && !_placedObjs.count(adj)) {
+                _ghostPlace = adj; _ghostPlaceValid = true;
+            }
+            return;
+        }
+        // Check placed OBJs
+        auto oit = _placedObjs.find(gp);
+        if (oit != _placedObjs.end()) {
+            _ghostHit = gp; _ghostHitValid = true;
+            glm::vec3 hp = origin + dir * t;
+            glm::vec3 hn = glm::vec3(gp) - hp;
+            float ax = fabsf(hn.x), ay = fabsf(hn.y), az = fabsf(hn.z);
+            glm::ivec3 adj = gp;
+            if (ax >= ay && ax >= az)      adj.x += (hn.x > 0 ? -1 : 1);
+            else if (ay >= ax && ay >= az) adj.y += (hn.y > 0 ? -1 : 1);
+            else                           adj.z += (hn.z > 0 ? -1 : 1);
+            if (_blocks.find(adj) == _blocks.end() && !_placedObjs.count(adj)) {
+                _ghostPlace = adj; _ghostPlaceValid = true;
             }
             return;
         }
