@@ -11,6 +11,7 @@
 #include "../animation/humanoid.h"
 #include "../mesh/mesh.h"
 #include "../primitives/primitives.h"
+#include "../obj_loader/obj_loader.h"
 #include "../render_util/simple_lit.h"
 #include "../render_util/textured_lit.h"
 #include "../camera/free_camera.h"
@@ -21,6 +22,8 @@
 #include <vector>
 #include <memory>
 #include <string>
+#include <functional>
+#include <unordered_map>
 
 // ============================================================
 // Block types
@@ -34,6 +37,7 @@ enum BlockType : int {
     BT_LEAVES,
     BT_SAND,
     BT_WATER,
+    BT_DOOR,
     BT_COUNT
 };
 
@@ -46,6 +50,7 @@ inline const char* blockTypeName(int t) {
         case BT_LEAVES: return "Leaves";
         case BT_SAND:   return "Sand";
         case BT_WATER:  return "Water";
+        case BT_DOOR:   return "Door";
         default:        return "???";
     }
 }
@@ -59,6 +64,7 @@ inline glm::vec3 blockTypeColor(int t) {
         case BT_LEAVES: return {0.20f, 0.55f, 0.15f};
         case BT_SAND:   return {0.85f, 0.80f, 0.55f};
         case BT_WATER:  return {0.25f, 0.45f, 0.85f};
+        case BT_DOOR:   return {0.60f, 0.35f, 0.15f};
         default:        return {0.50f, 0.50f, 0.50f};
     }
 }
@@ -82,6 +88,18 @@ struct DroppedItem {
     float pickupTimer = 0;
 };
 
+struct DoorAnim {
+    float angle = 0.0f;
+    float target = 0.0f;
+    float speed = 6.0f;
+};
+
+struct PlacedObj {
+    std::unique_ptr<Mesh> mesh;
+    std::string name;
+    float scale = 1.0f;
+};
+
 class MinecraftGame : public Application {
 public:
     MinecraftGame(const Options& options);
@@ -97,12 +115,26 @@ private:
     // ===== World =====
     std::unique_ptr<SkyBox> _skybox;
     std::unique_ptr<Mesh> _cubeMesh;
+    std::unique_ptr<Mesh> _doorFrame;
+    std::unique_ptr<Mesh> _doorPanel;
     SimpleLitShader _litShader;
     TexturedLitShader _texLitShader;
     std::unique_ptr<Mesh> _earthMesh;
     GLuint _earthTex = 0;
     std::vector<std::unique_ptr<Mesh>> _primitiveMeshes;
     std::vector<std::string> _primitiveNames;
+
+    // OBJ import
+    std::unordered_map<glm::ivec3, PlacedObj, ivec3_hash> _placedObjs;
+    std::vector<std::string> _objFiles;
+    int _selectedObj = 0;
+
+    // Door state
+    std::unordered_map<glm::ivec3, bool, ivec3_hash> _doorOpen;
+    std::unordered_map<glm::ivec3, DoorAnim, ivec3_hash> _doorAnim;
+
+    // Inventory
+    bool _inventoryOpen = false;
     InstancedTexturedLitShader _instTexLitShader;
     GLuint _blockAtlas = 0;
     static constexpr int ATLAS_SIZE = 1024;
@@ -136,7 +168,6 @@ private:
 
     // ===== Blocks / Inventory =====
     int _selectedBlock = BT_GRASS;
-    bool _inventoryOpen = false;
     bool _settingsOpen = false;
 
     // ===== Ghost block preview =====

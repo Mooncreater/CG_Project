@@ -92,3 +92,13 @@ Element ObjLoader::Load(const std::string& filepath) {
 
     return element;
 }
+
+void ObjLoader::Save(const std::string& filepath, const Element& element, const glm::mat4& transform) {
+    std::ofstream file(filepath);
+    if (!file.is_open()) throw std::runtime_error("Cannot open for writing: " + filepath);
+    file << "# OBJ exported\n";
+    for (auto& v : element.vertices) { auto p=transform*glm::vec4(v.position,1); file<<"v "<<p.x<<" "<<p.y<<" "<<p.z<<"\n"; }
+    for (auto& v : element.vertices) { auto n=glm::mat3(transform)*v.normal; file<<"vn "<<n.x<<" "<<n.y<<" "<<n.z<<"\n"; }
+    for (auto& v : element.vertices) file<<"vt "<<v.texCoord.x<<" "<<v.texCoord.y<<"\n";
+    for (size_t i=0;i<element.indices.size();i+=3) { auto a=element.indices[i]+1,b=element.indices[i+1]+1,c=element.indices[i+2]+1; file<<"f "<<a<<"/"<<a<<"/"<<a<<" "<<b<<"/"<<b<<"/"<<b<<" "<<c<<"/"<<c<<"/"<<c<<"\n"; }
+}

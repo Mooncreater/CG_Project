@@ -1338,7 +1338,34 @@ void MinecraftGame::drawInventory() {
         ImGui::PopID();
     }
 
-    ImGui::End();
+        // === OBJ Models ===
+    ImGui::Separator();
+    ImGui::TextColored(ImVec4(1,0.8f,0.3f,1), "OBJ Models (I=cycle, P=place, X=export)");
+    if(!_objFiles.empty()){
+        for(int j=0;j<(int)_objFiles.size();j++){
+            if(j%4!=0) ImGui::SameLine();
+            bool sel=(j==_selectedObj);
+            char oblbl[64]; snprintf(oblbl,sizeof(oblbl),"%s%s",sel?"> ":"  ",_objFiles[j].c_str());
+            ImVec4 oc=sel?ImVec4(1,0.7f,0.2f,1):ImVec4(0.5f,0.5f,0.5f,1);
+            ImGui::PushStyleColor(ImGuiCol_Button,oc);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered,ImVec4(oc.x*1.2f,oc.y*1.2f,oc.z*1.2f,1));
+            if(ImGui::Button(oblbl,ImVec2(90,25))) _selectedObj=j;
+            ImGui::PopStyleColor(2);
+        }
+    }else{ImGui::TextDisabled("No .obj files in media/obj/");}
+    ImGui::Separator();
+    if(ImGui::Button("Export Scene as OBJ",ImVec2(180,28))){
+        Element allBlocks;
+        for(auto& kv:_blocks){if(kv.second==BT_AIR)continue;
+            auto cube=Primitives::CreateCube(1.0f); glm::vec3 off=glm::vec3(kv.first);
+            uint32_t base=(uint32_t)allBlocks.vertices.size();
+            for(auto& v:cube.vertices){auto v2=v;v2.position+=off;allBlocks.vertices.push_back(v2);}
+            for(auto idx:cube.indices)allBlocks.indices.push_back(base+idx);
+        }
+        if(!allBlocks.vertices.empty()){_mkdir("media/obj");ObjLoader::Save("media/obj/exported_scene.obj",allBlocks);_screenshotFlash=1.5f;}
+    }
+
+ImGui::End();
 }
 
 // ============================================================
