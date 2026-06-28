@@ -11,6 +11,8 @@
 #include <algorithm>
 #include <direct.h>
 #include <stb_image_write.h>
+#include <stb_image.h>
+#include <functional>
 // Simple hash-based 2D noise
 // ============================================================
 // ============================================================
@@ -243,6 +245,8 @@ MinecraftGame::MinecraftGame(const Options& o) : Application(o), _worldSeed(42) 
     }
 
     buildTextureAtlas();
+    buildEarthTexture();
+    createShowcaseObjects();
 
     // Generate mountain-water skybox textures
     std::string skyDir = o.assetRootDir + "/texture/skybox_mountain/";
@@ -262,8 +266,8 @@ MinecraftGame::MinecraftGame(const Options& o) : Application(o), _worldSeed(42) 
 
     initWorld();
 
-    float terrainH = getTerrainHeight(0, 0);
-    _playerPos = glm::vec3(0, terrainH + 0.5f, 0);
+    float spawnY = 4.5f;
+    _playerPos = glm::vec3(0, spawnY, 0);
 
     _fc.target = _playerPos + glm::vec3(0, 1.0f, 0);
     _fc.dist = 5;
@@ -290,31 +294,28 @@ void MinecraftGame::initWorld() {
 
 void MinecraftGame::generateTerrain() {
     const int SZ = WORLD_SIZE;
+    const int CLEAR_RADIUS = 14;
+    const int TREE_CLEAR = 18;
 
     for (int x = -SZ; x <= SZ; ++x) {
         for (int z = -SZ; z <= SZ; ++z) {
+            float dist = sqrtf((float)(x * x + z * z));
             float hf = getTerrainHeight((float)x, (float)z);
-            int groundY = (int)roundf(hf);
+            int groundY;
+            float t = (dist - CLEAR_RADIUS + 4.0f) / 4.0f;
+            if (t < 0) t = 0; if (t > 1) t = 1;
+            groundY = (int)roundf(3.0f * (1 - t) + roundf(hf) * t);
 
-            // Stone layer (bottom)
             for (int y = -4; y <= groundY - 4; ++y)
                 _blocks[{x, y, z}] = BT_STONE;
-
-            // Dirt layer
             for (int y = groundY - 3; y <= groundY - 1; ++y)
                 _blocks[{x, y, z}] = BT_DIRT;
-
-            // Grass on top
             _blocks[{x, groundY, z}] = BT_GRASS;
-
-            // Sand near water level (low areas)
-            if (groundY <= 2) {
+            if (groundY <= 2 && dist > CLEAR_RADIUS) {
                 _blocks[{x, groundY, z}] = BT_SAND;
                 for (int y = groundY - 2; y < groundY; ++y)
                     _blocks[{x, y, z}] = BT_SAND;
             }
-
-            // Water in very low areas
             if (groundY <= 0) {
                 for (int y = 1; y >= groundY + 1; --y)
                     _blocks[{x, y, z}] = BT_WATER;
@@ -323,23 +324,20 @@ void MinecraftGame::generateTerrain() {
         }
     }
 
-    // ---- Trees ----
     for (int x = -SZ + 1; x < SZ; ++x) {
         for (int z = -SZ + 1; z < SZ; ++z) {
-            // ~12% chance tree on grass, above water level
+            float dist = sqrtf((float)(x * x + z * z));
+            if (dist < TREE_CLEAR) continue;
             if ((hash((uint32_t)(x * 1931 + z * 8327 + _worldSeed * 999)) % 100) < 8) {
-                auto it = _blocks.find({x, 999, z}); // dummy, just checking grass
                 int groundY = (int)roundf(getTerrainHeight((float)x, (float)z));
                 auto git = _blocks.find({x, groundY, z});
                 if (git != _blocks.end() && git->second == BT_GRASS) {
-                    // Check 5x5 clearing (no other trees too close)
                     bool blocked = false;
                     for (int dx = -2; dx <= 2 && !blocked; ++dx)
                         for (int dz = -2; dz <= 2 && !blocked; ++dz)
                             if (_blocks.find({x + dx, groundY + 1, z + dz}) != _blocks.end())
                                 blocked = true;
-                    if (!blocked)
-                        placeTree(x, groundY + 1, z);
+                    if (!blocked) placeTree(x, groundY + 1, z);
                 }
             }
         }
@@ -597,6 +595,56 @@ void MinecraftGame::buildTextureAtlas() {
 
 // ============================================================
 // First-person forward vector
+void MinecraftGame::buildEarthTexture() {
+    int w, h, c;
+    unsigned char* data = stbi_load("media/texture/miscellaneous/earthmap.jpg", &w, &h, &c, 4);
+    if (!data) {
+        // Fallback: create a blue sphere
+        std::vector<uint8_t> fb(64 * 64 * 4, 255);
+        for (int i = 0; i < 64 * 64; i++) {
+            fb[i*4]=40; fb[i*4+1]=100; fb[i*4+2]=200;
+        }
+        glGenTextures(1, &_earthTex);
+        glBindTexture(GL_TEXTURE_2D, _earthTex);
+        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE, fb.data());
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        glBindTexture(GL_TEXTURE_2D, 0);
+        return;
+    }
+    glGenTextures(1, &_earthTex);
+    glBindTexture(GL_TEXTURE_2D, _earthTex);
+    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+    glGenerateMipmap(GL_TEXTURE_2D);
+    glBindTexture(GL_TEXTURE_2D, 0);
+    stbi_image_free(data);
+}
+
+void MinecraftGame::createShowcaseObjects() {
+    auto el = Primitives::CreateSphere(1.5f, 48);
+    _earthMesh = std::make_unique<Mesh>(el.vertices, el.indices);
+
+    struct PrimDef { std::function<Element()> fn; };
+    PrimDef defs[] = {
+        { []{ return Primitives::CreateCube(1.2f); } },
+        { []{ return Primitives::CreateSphere(0.8f, 32); } },
+        { []{ return Primitives::CreateCylinder(0.7f, 1.5f, 32); } },
+        { []{ return Primitives::CreateCone(0.8f, 1.5f, 32); } },
+        { []{ return Primitives::CreatePrism(5, 0.8f, 1.2f); } },
+        { []{ return Primitives::CreateFrustum(6, 0.9f, 0.4f, 1.2f); } },
+    };
+    const char* names[] = {"Cube","Sphere","Cylinder","Cone","Prism","Frustum"};
+    for (int i = 0; i < 6; i++) {
+        auto e = defs[i].fn();
+        _primitiveMeshes.push_back(std::make_unique<Mesh>(e.vertices, e.indices));
+        _primitiveNames.push_back(names[i]);
+    }
+}
+
 // ============================================================
 glm::vec3 MinecraftGame::fpForward() const {
     float cy = cos(_playerYaw), sy = sin(_playerYaw);
@@ -1335,6 +1383,37 @@ void MinecraftGame::renderFrame() {
 
     // Character
     drawCharacter(proj, view);
+
+    // === Earth globe ===
+    {
+        glm::vec3 camPos = _firstPerson ? (_playerPos + glm::vec3(0, 1.7f, 0)) : _fc.position();
+        glm::vec3 earthPos(0, 10.0f, 0);
+        auto m = glm::translate(glm::mat4(1), earthPos) * glm::rotate(glm::mat4(1), _gameTime*0.3f, glm::vec3(0,1,0)) * glm::rotate(glm::mat4(1), -0.4f, glm::vec3(1,0,0));
+        PhongParams ep = makePhongParams(camPos); ep.shadowsOn = _shadowsOn;
+        drawTexturedLit(_texLitShader, _earthMesh.get(), m, 0, 1.0f, _earthTex, proj, view, ep);
+    }
+
+    // === Primitives orbiting Earth ===
+    {
+        glm::vec3 camPos = _firstPerson ? (_playerPos + glm::vec3(0, 1.7f, 0)) : _fc.position();
+        glm::vec3 earthPos(0, 10.0f, 0);
+        int n = (int)_primitiveMeshes.size();
+        float orbitR = 3.0f;
+        const float TPI = 6.283185307f;
+        glm::vec4 cols[] = {{0.9f,0.3f,0.3f,1},{0.3f,0.5f,0.9f,1},{0.3f,0.9f,0.4f,1},{0.9f,0.7f,0.2f,1},{0.7f,0.3f,0.9f,1},{0.9f,0.5f,0.5f,1}};
+        for(int i=0;i<n;i++){
+            float a = _gameTime*0.6f + (float)i/n*TPI;
+            float tilt = (float)i * 0.5f;
+            float rx = cosf(a) * orbitR;
+            float rz = sinf(a) * orbitR * cosf(tilt);
+            float ry = sinf(a) * orbitR * sinf(tilt);
+            glm::vec3 p = earthPos + glm::vec3(rx, ry, rz);
+            auto pm = glm::translate(glm::mat4(1), p)
+                     * glm::rotate(glm::mat4(1), _gameTime*0.8f+(float)i, glm::vec3(0.3f,1,0.2f));
+            PhongParams pp = makePhongParams(camPos); pp.shadowsOn = _shadowsOn;
+            drawLit(_litShader, _primitiveMeshes[i].get(), pm, cols[i], proj, view, pp);
+        }
+    }
 
     // Point light indicator — small bright cube at light position
     {

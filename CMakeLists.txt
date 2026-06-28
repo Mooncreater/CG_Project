@@ -51,6 +51,8 @@ target_include_directories(engine PUBLIC
     ${THIRD_PARTY_LIBRARY_PATH}/stb
 )
 
+set_target_properties(engine PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
+set_target_properties(engine PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
 target_compile_definitions(engine PRIVATE _USE_MATH_DEFINES)
 if(MSVC)
     target_compile_options(engine PRIVATE /utf-8)
@@ -86,9 +88,11 @@ file(GLOB MAIN_SRC ${SOURCE_PATH}/main.cpp)
 
 add_executable(final_project ${MAIN_SRC} ${GAME_HDR} ${GAME_SRC})
 target_link_libraries(final_project PRIVATE engine)
+set_target_properties(final_project PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
 if(WIN32)
     set_target_properties(final_project PROPERTIES RUNTIME_OUTPUT_DIRECTORY "${CMAKE_BINARY_DIR}/bin")
 endif()
+set_target_properties(final_project PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQUIRED ON)
 if(MSVC)
     target_compile_options(final_project PRIVATE /utf-8)
 endif()

@@ -76,7 +76,8 @@ public:
 
                 float sh=shadowFactor(fls);
                 vec3 lit=ambient+(diffuse+specular)*sh+ptContrib;
-                o=vec4(lit,uAlpha);
+                vec3 gamma=pow(lit,vec3(1.0/2.2));
+                o=vec4(gamma,uAlpha);
             })";
         _prog = std::make_unique<GLSLProgram>();
         _prog->attachVertexShader(vs);

@@ -1,4 +1,5 @@
 #pragma once
+#include <functional>
 
 #include "../base/application.h"
 #include "../base/skybox.h"
@@ -98,6 +99,10 @@ private:
     std::unique_ptr<Mesh> _cubeMesh;
     SimpleLitShader _litShader;
     TexturedLitShader _texLitShader;
+    std::unique_ptr<Mesh> _earthMesh;
+    GLuint _earthTex = 0;
+    std::vector<std::unique_ptr<Mesh>> _primitiveMeshes;
+    std::vector<std::string> _primitiveNames;
     InstancedTexturedLitShader _instTexLitShader;
     GLuint _blockAtlas = 0;
     static constexpr int ATLAS_SIZE = 1024;
@@ -192,6 +197,8 @@ private:
 
     // ===== Texture atlas =====
     void buildTextureAtlas();
+    void buildEarthTexture();
+    void createShowcaseObjects();
 
     // ===== Block queries =====
     int getBlock(int x, int y, int z) const;
