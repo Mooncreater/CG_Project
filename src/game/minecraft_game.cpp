@@ -198,6 +198,49 @@ MinecraftGame::MinecraftGame(const Options& o) : Application(o), _worldSeed(42) 
     _cubeMesh = std::make_unique<Mesh>(
         Primitives::CreateCube(1.0f).vertices,
         Primitives::CreateCube(1.0f).indices);
+    // Setup instanced VAO (cube mesh + instance position buffer)
+    {
+        auto cubeData = Primitives::CreateCube(1.0f);
+        glGenVertexArrays(1, &_instancedCubeVAO);
+        glBindVertexArray(_instancedCubeVAO);
+
+        // Position buffer
+        GLuint posVBO, normVBO, uvVBO, ibo;
+        glGenBuffers(1, &posVBO);
+        glBindBuffer(GL_ARRAY_BUFFER, posVBO);
+        std::vector<float> pbuf; for (auto& v : cubeData.vertices) { pbuf.push_back(v.position.x); pbuf.push_back(v.position.y); pbuf.push_back(v.position.z); }
+        glBufferData(GL_ARRAY_BUFFER, pbuf.size() * sizeof(float), pbuf.data(), GL_STATIC_DRAW);
+        glEnableVertexAttribArray(0);
+        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+        glGenBuffers(1, &normVBO);
+        glBindBuffer(GL_ARRAY_BUFFER, normVBO);
+        std::vector<float> nbuf; for (auto& v : cubeData.vertices) { nbuf.push_back(v.normal.x); nbuf.push_back(v.normal.y); nbuf.push_back(v.normal.z); }
+        glBufferData(GL_ARRAY_BUFFER, nbuf.size() * sizeof(float), nbuf.data(), GL_STATIC_DRAW);
+        glEnableVertexAttribArray(1);
+        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+        glGenBuffers(1, &uvVBO);
+        glBindBuffer(GL_ARRAY_BUFFER, uvVBO);
+        std::vector<float> ubuf; for (auto& v : cubeData.vertices) { ubuf.push_back(v.texCoord.x); ubuf.push_back(v.texCoord.y); }
+        glBufferData(GL_ARRAY_BUFFER, ubuf.size() * sizeof(float), ubuf.data(), GL_STATIC_DRAW);
+        glEnableVertexAttribArray(2);
+        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+
+        // Index buffer
+        glGenBuffers(1, &ibo);
+        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
+        glBufferData(GL_ELEMENT_ARRAY_BUFFER, cubeData.indices.size() * sizeof(uint32_t), cubeData.indices.data(), GL_STATIC_DRAW);
+
+        // Instance VBO
+        glGenBuffers(1, &_instanceVBO);
+        glBindBuffer(GL_ARRAY_BUFFER, _instanceVBO);
+        glEnableVertexAttribArray(3);
+        glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+        glVertexAttribDivisor(3, 1);
+
+        glBindVertexArray(0);
+    }
 
     buildTextureAtlas();
 
@@ -366,13 +409,11 @@ void MinecraftGame::initShadowMap() {
 
 void MinecraftGame::renderShadowPass() {
     if (!_shadowsOn) return;
-
     // Compute light-space matrix
     glm::vec3 sunDir = glm::normalize(-_sunDir);
     float range = 30.0f;
     glm::vec3 lightPos = _playerPos - sunDir * range * 0.5f;
 
-    // Avoid degenerate lookAt when sun is near-vertical
     glm::vec3 up = glm::vec3(0, 1, 0);
     if (fabsf(glm::dot(glm::normalize(sunDir), up)) > 0.99f)
         up = glm::vec3(1, 0, 0);
@@ -389,18 +430,38 @@ void MinecraftGame::renderShadowPass() {
     glCullFace(GL_FRONT);
     glDisable(GL_BLEND);
 
-    float distSqMax = range * range;
-    _shadowShader->use();
+    // Collect opaque instance positions
+    static std::vector<glm::vec3> shadowPos;
+    shadowPos.clear();
     for (auto& kv : _blocks) {
         if (kv.second == BT_AIR || kv.second == BT_WATER || kv.second == BT_LEAVES) continue;
-        glm::vec3 pos = glm::vec3(kv.first);
-        float dx = pos.x - _playerPos.x, dy = pos.y - _playerPos.y, dz = pos.z - _playerPos.z;
-        if (dx*dx + dy*dy + dz*dz > distSqMax) continue;
-        auto model = glm::translate(glm::mat4(1), pos);
-        _shadowShader->setUniformMat4("uLS", _lightSpaceMatrix);
-        _shadowShader->setUniformMat4("uM", model);
-        _cubeMesh->draw();
+        shadowPos.push_back(glm::vec3(kv.first));
     }
+    if (shadowPos.empty()) { glCullFace(GL_BACK); glBindFramebuffer(GL_FRAMEBUFFER, 0); return; }
+
+    glBindBuffer(GL_ARRAY_BUFFER, _instanceVBO);
+    glBufferData(GL_ARRAY_BUFFER, shadowPos.size() * sizeof(glm::vec3),
+                 shadowPos.data(), GL_DYNAMIC_DRAW);
+
+    // Simple instanced shadow shader
+    static std::unique_ptr<GLSLProgram> instShadowProg;
+    if (!instShadowProg) {
+        const char* vs = R"(#version 330 core
+            layout(location=0) in vec3 aP; layout(location=3) in vec3 aInstP;
+            uniform mat4 uLS;
+            void main(){ gl_Position=uLS*vec4(aP+aInstP,1); })";
+        instShadowProg = std::make_unique<GLSLProgram>();
+        instShadowProg->attachVertexShader(vs);
+        instShadowProg->attachFragmentShader(R"(#version 330 core
+            void main(){})");
+        instShadowProg->link();
+    }
+    instShadowProg->use();
+    instShadowProg->setUniformMat4("uLS", _lightSpaceMatrix);
+    glBindVertexArray(_instancedCubeVAO);
+    glDrawElementsInstanced(GL_TRIANGLES, (GLsizei)_cubeMesh->indexCount(),
+                            GL_UNSIGNED_INT, 0, (GLsizei)shadowPos.size());
+    glBindVertexArray(0);
 
     glCullFace(GL_BACK);
     glDisable(GL_CULL_FACE);
@@ -548,6 +609,7 @@ glm::vec3 MinecraftGame::fpForward() const {
 // ============================================================
 void MinecraftGame::handleInput() {
     _gameTime += _deltaTime;
+    if (_screenshotFlash > 0) _screenshotFlash -= _deltaTime;
 
     // Smooth FPS: exponential moving average
     if (_deltaTime > 0) {
@@ -556,22 +618,24 @@ void MinecraftGame::handleInput() {
     }
     updateDroppedItems();
 
-    // ---- F2: screenshot ----
+    // ---- F2: screenshot (PNG) ----
     static bool f2WasDown = false;
     bool f2Now = (_input.keyboard.keyStates[GLFW_KEY_F2] != GLFW_RELEASE);
     if (f2Now && !f2WasDown) {
+        _mkdir("screenshots");
         std::vector<uint8_t> pixels(_windowWidth * _windowHeight * 3);
         glReadPixels(0, 0, _windowWidth, _windowHeight, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
-        char fname[64];
+        // Flip vertically (OpenGL bottom-left vs PNG top-left)
+        std::vector<uint8_t> flipped(_windowWidth * _windowHeight * 3);
+        for (int y = 0; y < _windowHeight; ++y)
+            memcpy(&flipped[y * _windowWidth * 3],
+                   &pixels[(_windowHeight - 1 - y) * _windowWidth * 3],
+                   _windowWidth * 3);
+        char fname[128];
         time_t now = time(nullptr);
-        snprintf(fname, sizeof(fname), "screenshot_%lld.ppm", (long long)now);
-        FILE* fp = fopen(fname, "wb");
-        if (fp) {
-            fprintf(fp, "P6\n%d %d\n255\n", _windowWidth, _windowHeight);
-            for (int y = _windowHeight - 1; y >= 0; --y)
-                fwrite(&pixels[y * _windowWidth * 3], 1, _windowWidth * 3, fp);
-            fclose(fp);
-        }
+        snprintf(fname, sizeof(fname), "screenshots/screenshot_%lld.png", (long long)now);
+        stbi_write_png(fname, _windowWidth, _windowHeight, 3, flipped.data(), _windowWidth * 3);
+        _screenshotFlash = 2.0f;
     }
     f2WasDown = f2Now;
 
@@ -680,7 +744,6 @@ void MinecraftGame::handleInputFirstPerson() {
         }
     }
     fpLeftWas = fpLeft;
-
     // ---- Right click = remove block ----
     static bool fpRightWas = false;
     bool fpRight = _input.mouse.press.right;
@@ -782,12 +845,25 @@ void MinecraftGame::handleInputThirdPerson() {
     _ctrl.zoom();
     _ctrl.pan();
 
-    // ---- F: zoom to fit ----
+    // ---- F: toggle zoom to fit / restore ----
     static bool fWasDown = false;
     bool fNow = (_input.keyboard.keyStates[GLFW_KEY_F] != GLFW_RELEASE);
     if (fNow && !fWasDown) {
-        _fc.target = _playerPos + glm::vec3(0, 1.0f, 0);
-        _fc.zoomToFit((float)WORLD_SIZE);
+        if (_zoomedOut) {
+            _fc.dist  = _preZoomDist;
+            _fc.yaw   = _preZoomYaw;
+            _fc.pitch = _preZoomPitch;
+            _fc.target = _preZoomTarget;
+            _zoomedOut = false;
+        } else {
+            _preZoomDist   = _fc.dist;
+            _preZoomYaw    = _fc.yaw;
+            _preZoomPitch  = _fc.pitch;
+            _preZoomTarget = _fc.target;
+            _fc.target = _playerPos + glm::vec3(0, 1.0f, 0);
+            _fc.zoomToFit((float)WORLD_SIZE);
+            _zoomedOut = true;
+        }
     }
     fWasDown = fNow;
 
@@ -982,67 +1058,56 @@ bool MinecraftGame::isSolidBlock(int x, int y, int z) const {
     int bt = getBlock(x, y, z);
     return bt != BT_AIR && bt != BT_WATER && bt != BT_LEAVES;
 }
-
 // ============================================================
-// Render — per-block with frustum culling
+// Render — instanced per block type
 // ============================================================
-static bool aabbInFrustum(const glm::vec3& c, float half,
-                          const glm::vec4 planes[6]) {
-    for (int i = 0; i < 6; ++i) {
-        float r = half * (fabsf(planes[i].x) + fabsf(planes[i].y) + fabsf(planes[i].z));
-        if (planes[i].x * c.x + planes[i].y * c.y + planes[i].z * c.z + planes[i].w < -r)
-            return false;
-    }
-    return true;
-}
-
 void MinecraftGame::drawBlocks(const glm::mat4& proj, const glm::mat4& view) {
-    const float viewDist = 32.0f;
-    const float viewDistSq = viewDist * viewDist;
     glm::vec3 camPos;
     if (_firstPerson) camPos = _playerPos + glm::vec3(0, 1.7f, 0);
     else              camPos = _fc.position();
 
-    glm::mat4 vp = proj * view;
-    glm::vec4 planes[6];
-    for (int i = 0; i < 3; ++i) {
-        planes[i*2]   = glm::vec4(vp[0][3]+vp[0][i], vp[1][3]+vp[1][i], vp[2][3]+vp[2][i], vp[3][3]+vp[3][i]);
-        planes[i*2+1] = glm::vec4(vp[0][3]-vp[0][i], vp[1][3]-vp[1][i], vp[2][3]-vp[2][i], vp[3][3]-vp[3][i]);
-    }
-    for (int i = 0; i < 6; ++i) {
-        float len = sqrtf(planes[i].x*planes[i].x+planes[i].y*planes[i].y+planes[i].z*planes[i].z);
-        if (len > 0.0001f) planes[i] /= len;
-    }
-
     PhongParams pp = makePhongParams(camPos);
 
-    // Opaque pass
-    for (auto& kv : _blocks) {
-        if (kv.second == BT_AIR || kv.second == BT_WATER || kv.second == BT_LEAVES) continue;
-        glm::vec3 pos = glm::vec3(kv.first);
-        glm::vec3 d = pos - camPos;
-        if (glm::dot(d, d) > viewDistSq) continue;
-        if (!aabbInFrustum(pos, 0.5f, planes)) continue;
+    // Collect instance positions per block type
+    static std::vector<glm::vec3> posBuf[BT_COUNT];
+    for (int bt = 1; bt < BT_COUNT; ++bt) posBuf[bt].clear();
 
-        int baseTile = (kv.second - 1) * 3;
-        auto model = glm::translate(glm::mat4(1), pos);
-        drawTexturedLit(_texLitShader, _cubeMesh.get(), model, baseTile,
+    for (auto& kv : _blocks) {
+        if (kv.second == BT_AIR) continue;
+        posBuf[kv.second].push_back(glm::vec3(kv.first));
+    }
+
+    int indexCount = (int)_cubeMesh->indexCount();
+    // Opaque pass
+    for (int bt = 1; bt < BT_COUNT; ++bt) {
+        if (bt == BT_WATER || bt == BT_LEAVES) continue;
+        if (posBuf[bt].empty()) continue;
+
+        glBindBuffer(GL_ARRAY_BUFFER, _instanceVBO);
+        glBufferData(GL_ARRAY_BUFFER, posBuf[bt].size() * sizeof(glm::vec3),
+                     posBuf[bt].data(), GL_DYNAMIC_DRAW);
+
+        int baseTile = (bt - 1) * 3;
+        drawTexturedLitInstanced(_instTexLitShader, _instancedCubeVAO,
+            indexCount, (int)posBuf[bt].size(), baseTile,
             (float)ATLAS_COLS, _blockAtlas, proj, view, pp);
     }
 
     // Transparent pass
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    for (auto& kv : _blocks) {
-        if (kv.second != BT_WATER && kv.second != BT_LEAVES) continue;
-        glm::vec3 pos = glm::vec3(kv.first);
-        glm::vec3 d = pos - camPos;
-        if (glm::dot(d, d) > viewDistSq) continue;
-        if (!aabbInFrustum(pos, 0.5f, planes)) continue;
+    int transTypes[] = {BT_WATER, BT_LEAVES};
+    for (int ti = 0; ti < 2; ++ti) {
+        int bt = transTypes[ti];
+        if (posBuf[bt].empty()) continue;
 
-        int baseTile = (kv.second - 1) * 3;
-        auto model = glm::translate(glm::mat4(1), pos);
-        drawTexturedLit(_texLitShader, _cubeMesh.get(), model, baseTile,
+        glBindBuffer(GL_ARRAY_BUFFER, _instanceVBO);
+        glBufferData(GL_ARRAY_BUFFER, posBuf[bt].size() * sizeof(glm::vec3),
+                     posBuf[bt].data(), GL_DYNAMIC_DRAW);
+
+        int baseTile = (bt - 1) * 3;
+        drawTexturedLitInstanced(_instTexLitShader, _instancedCubeVAO,
+            indexCount, (int)posBuf[bt].size(), baseTile,
             (float)ATLAS_COLS, _blockAtlas, proj, view, pp);
     }
     glDisable(GL_BLEND);
@@ -1099,6 +1164,11 @@ void MinecraftGame::drawUI() {
         ImGui::End();
         ImGui::Text("WASD=Move Space=Jump | V=1st/3rd | E=Bag | F2=Screen");
         ImGui::Text("FPS: %.0f", _smoothFPS);
+        if (_screenshotFlash > 0) {
+            ImGui::PushStyleColor(ImGuiCol_Text, ImVec4(0.3f, 1.0f, 0.3f, 1.0f));
+            ImGui::Text("Screenshot saved!");
+            ImGui::PopStyleColor();
+        }
         ImGui::Text("LClick=Place (%s) | RClick=Destroy", blockTypeName(_selectedBlock));
         ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
         ImGui::Begin("Info", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar);

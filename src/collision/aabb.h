@@ -1,5 +1,4 @@
 #pragma once
-
 #include <glm/glm.hpp>
 #include <cmath>
 #include <algorithm>
@@ -17,17 +16,6 @@ struct AABB {
                min.z < o.max.z && max.z > o.min.z;
     }
 };
-
-// ============================================================
-// Per-axis collision test + resolution (Minecraft-style)
-// ============================================================
-// Moves `box` by `delta` on each axis independently.
-// On each axis, if the swept movement hits a solid block, stops at the
-// block boundary (plus a tiny epsilon to stay outside).
-// This produces natural wall-sliding and prevents tunneling.
-// Returns the resolved movement delta (may be less than requested).
-// Also sets `onGround` if there is a block directly under the box.
-// isSolid(blockValue) → bool (optional; all blocks solid by default)
 
 namespace detail {
 template<typename BlockMap, typename SolidPred>
@@ -62,7 +50,6 @@ glm::vec3 collideAndSlideImpl(const AABB& box, const glm::vec3& delta,
         AABB moved = box;
         (&moved.min.x)[axis] += amount;
         (&moved.max.x)[axis] += amount;
-        // For Y movement, shrink XZ slightly so side walls don't block jumping
         if (axis == 1) {
             const float margin = 0.12f;
             moved.min.x += margin; moved.max.x -= margin;
@@ -73,14 +60,10 @@ glm::vec3 collideAndSlideImpl(const AABB& box, const glm::vec3& delta,
         }
     };
 
-    // Y first (gravity/jump priority)
     checkAndMove(1, delta.y);
-
-    // X and Z (slide along walls)
     checkAndMove(0, delta.x);
     checkAndMove(2, delta.z);
 
-    // Ground check: scan all block positions under and at the player's feet
     float feetY = box.min.y + result.y;
     int byLow  = (int)floorf(feetY - 0.01f);
     int byHigh = (int)floorf(feetY + 0.01f);
@@ -88,8 +71,8 @@ glm::vec3 collideAndSlideImpl(const AABB& box, const glm::vec3& delta,
     int bx1 = (int)floorf(box.max.x + result.x - eps) + 1;
     int bz0 = (int)floorf(box.min.z + result.z);
     int bz1 = (int)floorf(box.max.z + result.z - eps) + 1;
-    for (int bx = bx0; bx <= bx1; ++bx) {
-        for (int bz = bz0; bz <= bz1; ++bz) {
+    for (int bx = bx0; bx <= bx1; ++bx)
+        for (int bz = bz0; bz <= bz1; ++bz)
             for (int by = byLow; by <= byHigh; ++by) {
                 auto it = blocks.find(glm::ivec3(bx, by, bz));
                 if (it != blocks.end() && isSolid(it->second)) {
@@ -97,22 +80,18 @@ glm::vec3 collideAndSlideImpl(const AABB& box, const glm::vec3& delta,
                     return result;
                 }
             }
-        }
-    }
 
     return result;
 }
 } // namespace detail
 
-// All blocks solid (default)
 template<typename BlockMap>
 glm::vec3 collideAndSlide(const AABB& box, const glm::vec3& delta,
                           const BlockMap& blocks, bool& onGround) {
     return detail::collideAndSlideImpl(box, delta, blocks, onGround,
-        [](const auto&) { return true; });
+        [](int) { return true; });
 }
 
-// With solid-predicate
 template<typename BlockMap, typename SolidPred>
 glm::vec3 collideAndSlide(const AABB& box, const glm::vec3& delta,
                           const BlockMap& blocks, bool& onGround,

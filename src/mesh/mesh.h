@@ -19,10 +19,9 @@ public:
 
     void draw() const;
     uint32_t indexCount() const { return _indexCount; }
+    GLuint vao() const { return _vao; }
 
 private:
     GLuint _vao = 0, _vbo = 0, _ebo = 0;
     uint32_t _indexCount = 0;
 };
-
-

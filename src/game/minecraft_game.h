@@ -98,6 +98,7 @@ private:
     std::unique_ptr<Mesh> _cubeMesh;
     SimpleLitShader _litShader;
     TexturedLitShader _texLitShader;
+    InstancedTexturedLitShader _instTexLitShader;
     GLuint _blockAtlas = 0;
     static constexpr int ATLAS_SIZE = 1024;
     static constexpr int ATLAS_COLS = 8;
@@ -105,6 +106,10 @@ private:
 
     std::unordered_map<glm::ivec3, int, ivec3_hash> _blocks;  // pos → BlockType
     std::vector<DroppedItem> _droppedItems;
+
+    // Instanced rendering
+    GLuint _instancedCubeVAO = 0;
+    GLuint _instanceVBO = 0;
 
     // ===== Camera =====
     FreeCamera _fc;
@@ -164,6 +169,10 @@ private:
     bool _rightWasDown = false;
     float _rightStartMX = 0, _rightStartMY = 0;
     float _gameTime = 0;
+    float _screenshotFlash = 0;
+    float _preZoomDist = 5; float _preZoomYaw = 0; float _preZoomPitch = -30;
+    glm::vec3 _preZoomTarget{0, 3, 0};
+    bool _zoomedOut = false;
 
     // ===== First/third person =====
     bool _firstPerson = false;
