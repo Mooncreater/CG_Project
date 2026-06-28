@@ -687,7 +687,7 @@ void MinecraftGame::handleInput() {
     // ---- E: toggle inventory ----
     { static bool w=false; bool n=(_input.keyboard.keyStates[GLFW_KEY_E]!=GLFW_RELEASE); if(n&&!w&&!ImGui::GetIO().WantCaptureKeyboard){_inventoryOpen=!_inventoryOpen;} w=n; }
     // ---- I: cycle OBJ ----
-    { static bool w=false; bool n=(_input.keyboard.keyStates[GLFW_KEY_I]!=GLFW_RELEASE); if(n&&!w&&!ImGui::GetIO().WantCaptureKeyboard){_selectedObj=(_selectedObj+1)%(int)_objFiles.size();} w=n; }
+    { static bool w=false; bool n=(_input.keyboard.keyStates[GLFW_KEY_I]!=GLFW_RELEASE); if(n&&!w&&!ImGui::GetIO().WantCaptureKeyboard){_selectedObj=(_selectedObj+1)%(int)_objFiles.size(); _objMode=true;} w=n; }
     // ---- P: place OBJ ----
     { static bool w=false; bool n=(_input.keyboard.keyStates[GLFW_KEY_P]!=GLFW_RELEASE); if(n&&!w&&_ghostPlaceValid&&!ImGui::GetIO().WantCaptureKeyboard){if(!_objFiles.empty()&&_objFiles[_selectedObj]!="(none)"){try{auto el=ObjLoader::Load("media/obj/"+_objFiles[_selectedObj]);PlacedObj po;po.mesh=std::make_unique<Mesh>(el.vertices,el.indices);po.name=_objFiles[_selectedObj];_placedObjs[_ghostPlace]=std::move(po);}catch(...){}}} w=n; }
     // ---- X: export OBJs ----
@@ -1020,20 +1020,29 @@ void MinecraftGame::computeGhost() {
 
 void MinecraftGame::drawGhost(const glm::mat4& proj, const glm::mat4& view) {
     if (!_ghostPlaceValid) return;
-    auto model = glm::translate(glm::mat4(1), glm::vec3(_ghostPlace));
+
+    bool isObj = _objMode && !_objFiles.empty() && _objFiles[_selectedObj] != "(none)";
+    glm::vec3 ghostPos = glm::vec3(_ghostPlace);
+    if (isObj) ghostPos.y += 1.0f;  // OBJs render 1 unit above placement
+
+    auto model = glm::translate(glm::mat4(1), ghostPos);
 
     glm::vec3 camPos;
     if (_firstPerson) camPos = _playerPos + glm::vec3(0, 1.7f, 0);
     else camPos = _fc.position();
 
     PhongParams pp = makePhongParams(camPos);
-    pp.shadowsOn = false; // No shadows on ghost preview
+    pp.shadowsOn = false;
+
+    glm::vec4 ghostColor;
+    if (isObj) ghostColor = glm::vec4(1.0f, 0.7f, 0.2f, 0.5f);  // gold for OBJ
+    else       ghostColor = glm::vec4(blockTypeColor(_selectedBlock), 0.5f);
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glPolygonMode(GL_FRONT_AND_BACK, GL_LINE);
     glLineWidth(2.0f);
-    drawLit(_litShader, _cubeMesh.get(), model, blockTypeColor(_selectedBlock), proj, view, pp);
+    drawLit(_litShader, _cubeMesh.get(), model, ghostColor, proj, view, pp);
     glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
     glLineWidth(1.0f);
     glDisable(GL_BLEND);
@@ -1197,6 +1206,18 @@ void MinecraftGame::drawBlocks(const glm::mat4& proj, const glm::mat4& view) {
             (float)ATLAS_COLS, _blockAtlas, proj, view, pp);
     }
     glDisable(GL_BLEND);
+    // === Placed OBJ models ===
+    for (auto& kv : _placedObjs) {
+        auto& po = kv.second;
+        if (!po.mesh) continue;
+        glm::vec3 p = glm::vec3(kv.first);
+        auto model = glm::translate(glm::mat4(1), p + glm::vec3(0, 1.0f, 0))
+                   * glm::scale(glm::mat4(1), glm::vec3(po.scale));
+        PhongParams op = makePhongParams(camPos);
+        op.shadowsOn = _shadowsOn;
+        drawTexturedLit(_texLitShader, po.mesh.get(), model, 0,
+            (float)ATLAS_COLS, _blockAtlas, proj, view, op);
+    }
 }
 
 void MinecraftGame::drawCharacter(const glm::mat4& proj, const glm::mat4& view) {
@@ -1243,7 +1264,7 @@ void MinecraftGame::drawUI() {
             char label[32];
             snprintf(label, sizeof(label), "%s%s", _selectedBlock == bt ? "[*]" : "", blockTypeName(bt));
             if (ImGui::Button(label, ImVec2(btnW, 30)))
-                _selectedBlock = bt;
+                _selectedBlock = bt; _objMode = false;
             ImGui::PopStyleColor(3);
             ImGui::PopID();
         }
@@ -1370,7 +1391,7 @@ void MinecraftGame::drawInventory() {
             blockTypeName(bt),
             _selectedBlock == bt ? "[selected]" : "");
         if (ImGui::Button(label, ImVec2(85, 65)))
-            _selectedBlock = bt;
+            _selectedBlock = bt; _objMode = false;
 
         ImGui::PopStyleColor(3);
         ImGui::PopID();

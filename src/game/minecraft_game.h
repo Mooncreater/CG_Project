@@ -128,6 +128,7 @@ private:
     std::unordered_map<glm::ivec3, PlacedObj, ivec3_hash> _placedObjs;
     std::vector<std::string> _objFiles;
     int _selectedObj = 0;
+    bool _objMode = false;
 
     // Door state
     std::unordered_map<glm::ivec3, bool, ivec3_hash> _doorOpen;
