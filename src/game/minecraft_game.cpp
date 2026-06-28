@@ -598,6 +598,7 @@ void MinecraftGame::buildTextureAtlas() {
 void MinecraftGame::buildEarthTexture() {
     int w, h, c;
     unsigned char* data = stbi_load("media/texture/miscellaneous/earthmap.jpg", &w, &h, &c, 4);
+    if (!data) data = stbi_load("../../media/texture/miscellaneous/earthmap.jpg", &w, &h, &c, 4);
     if (!data) {
         // Fallback: create a blue sphere
         std::vector<uint8_t> fb(64 * 64 * 4, 255);
