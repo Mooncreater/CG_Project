@@ -13,6 +13,7 @@
 #include <stb_image_write.h>
 #include <stb_image.h>
 #include <functional>
+#include <filesystem>
 // Simple hash-based 2D noise
 // ============================================================
 // ============================================================
@@ -247,6 +248,21 @@ MinecraftGame::MinecraftGame(const Options& o) : Application(o), _worldSeed(42) 
     buildTextureAtlas();
     buildEarthTexture();
     createShowcaseObjects();
+
+    // Scan OBJ files
+    {
+        namespace fs = std::filesystem;
+        const char* paths[] = {"media/obj", "../../media/obj", "../media/obj"};
+        std::string found;
+        for (auto p : paths) { if (fs::exists(p)) { found = p; break; } }
+        if (!found.empty()) {
+            for (auto& e : fs::directory_iterator(found)) {
+                if (e.path().extension() == ".obj")
+                    _objFiles.push_back(e.path().filename().string());
+            }
+        }
+        if (_objFiles.empty()) _objFiles.push_back("(none)");
+    }
 
     // Generate mountain-water skybox textures
     std::string skyDir = o.assetRootDir + "/texture/skybox_mountain/";
@@ -668,6 +684,14 @@ void MinecraftGame::handleInput() {
     updateDroppedItems();
 
     // ---- F2: screenshot (PNG) ----
+    // ---- E: toggle inventory ----
+    { static bool w=false; bool n=(_input.keyboard.keyStates[GLFW_KEY_E]!=GLFW_RELEASE); if(n&&!w&&!ImGui::GetIO().WantCaptureKeyboard){_inventoryOpen=!_inventoryOpen;} w=n; }
+    // ---- I: cycle OBJ ----
+    { static bool w=false; bool n=(_input.keyboard.keyStates[GLFW_KEY_I]!=GLFW_RELEASE); if(n&&!w&&!ImGui::GetIO().WantCaptureKeyboard){_selectedObj=(_selectedObj+1)%(int)_objFiles.size();} w=n; }
+    // ---- P: place OBJ ----
+    { static bool w=false; bool n=(_input.keyboard.keyStates[GLFW_KEY_P]!=GLFW_RELEASE); if(n&&!w&&_ghostPlaceValid&&!ImGui::GetIO().WantCaptureKeyboard){if(!_objFiles.empty()&&_objFiles[_selectedObj]!="(none)"){try{auto el=ObjLoader::Load("media/obj/"+_objFiles[_selectedObj]);PlacedObj po;po.mesh=std::make_unique<Mesh>(el.vertices,el.indices);po.name=_objFiles[_selectedObj];_placedObjs[_ghostPlace]=std::move(po);}catch(...){}}} w=n; }
+    // ---- X: export OBJs ----
+    { static bool w=false; bool n=(_input.keyboard.keyStates[GLFW_KEY_X]!=GLFW_RELEASE); if(n&&!w&&!ImGui::GetIO().WantCaptureKeyboard){Element all;for(auto&kv:_placedObjs){auto&po=kv.second;if(!po.mesh)continue;auto&sv=po.mesh->vertices();auto&si=po.mesh->indices();glm::vec3 off=glm::vec3(kv.first)+glm::vec3(0,1,0);uint32_t base=(uint32_t)all.vertices.size();for(auto&v:sv){auto v2=v;v2.position=v.position*po.scale+off;all.vertices.push_back(v2);}for(auto idx:si)all.indices.push_back(base+idx);}if(!all.vertices.empty()){_mkdir("media/obj");time_t now=time(nullptr);char fn[128];snprintf(fn,sizeof(fn),"media/obj/export_%lld.obj",(long long)now);ObjLoader::Save(fn,all);_screenshotFlash=1.5f;}} w=n; }
     static bool f2WasDown = false;
     bool f2Now = (_input.keyboard.keyStates[GLFW_KEY_F2] != GLFW_RELEASE);
     if (f2Now && !f2WasDown) {
