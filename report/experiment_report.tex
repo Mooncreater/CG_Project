@@ -17,7 +17,9 @@
 
 % === Code style ===
 \lstset{
-    basicstyle=\ttfamily\small,
+    basicstyle=\small\ttfamily,
+    columns=flexible,
+    extendedchars=true,
     breaklines=true,
     frame=single,
     numbers=left,
@@ -200,6 +202,28 @@ L = &\underbrace{k_a \cdot C \cdot (0.5 + 0.5 N_y)}_{\text{半球环境光}} \\
     \item \textbf{全局缩放 (Zoom To Fit)：} 场景加载时自动调整相机距离以适应场景包围盒
 \end{itemize}
 
+
+\begin{figure}[H]
+    \centering
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/1.png}
+        \caption{第一人称视角}
+        \label{fig:first_person}
+    \end{subfigure}
+    \hfill
+    \begin{subfigure}{0.48\textwidth}
+        \centering
+        \includegraphics[width=\textwidth]{figures/3.png}
+        \caption{第三人称视角}
+        \label{fig:third_person}
+    \end{subfigure}
+    \caption{第一人称与第三人称视角对比}
+    \label{fig:camera_modes}
+\end{figure}
+
+
+
 相机参数（FOV、近远裁剪面）均可在代码中调整。支持 \texttt{glm::perspective} 和 \texttt{glm::lookAt} 标准投影。
 
 \subsection{动画播放}
@@ -291,6 +315,14 @@ L = &\underbrace{k_a \cdot C \cdot (0.5 + 0.5 N_y)}_{\text{半球环境光}} \\
     \item 阴影仅作用于太阳平行光（点光源无阴影，避免性能问题）
 \end{itemize}
 
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.75\textwidth]{figures/shadow.png}
+    \caption{PCF 软阴影效果展示}
+    \label{fig:shadow}
+\end{figure}
+
+
 \subsection{完整三维游戏}
 
 基于引擎构建了可玩的 Minecraft/TD 混合游戏 \texttt{final\_project}：
@@ -319,6 +351,14 @@ L = &\underbrace{k_a \cdot C \cdot (0.5 + 0.5 N_y)}_{\text{半球环境光}} \\
     \item 昼夜循环效果（通过调整太阳方向实现）
     \item 角色骨骼动画（idle/walk/jump 平滑过渡）
 \end{itemize}
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.85\textwidth]{figures/total.png}
+    \caption{游戏总览截图}
+    \label{fig:total}
+\end{figure}
+
 
 \subsection{对象表达能力（门、窗、墙）}
 
