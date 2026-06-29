@@ -254,6 +254,7 @@ private:
     void drawDroppedItems(const glm::mat4& proj, const glm::mat4& view);
 
     void drawBlocks(const glm::mat4& proj, const glm::mat4& view);
+    void drawDoors(const glm::mat4& proj, const glm::mat4& view);
     void drawCharacter(const glm::mat4& proj, const glm::mat4& view);
     void drawUI();
     void drawInventory();

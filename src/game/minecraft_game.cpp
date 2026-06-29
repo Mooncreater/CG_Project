@@ -306,6 +306,7 @@ MinecraftGame::~MinecraftGame() {
 // ============================================================
 void MinecraftGame::initWorld() {
     generateTerrain();
+    _blocks[{4, 1, 0}] = BT_DOOR;
 }
 
 void MinecraftGame::generateTerrain() {
@@ -717,6 +718,19 @@ void MinecraftGame::handleInput() {
     bool lNow = (_input.keyboard.keyStates[GLFW_KEY_L] != GLFW_RELEASE);
     if (lNow && !lWasDown) _settingsOpen = !_settingsOpen;
     lWasDown = lNow;
+
+    static bool oWasDown=false;
+    bool oNow=(_input.keyboard.keyStates[GLFW_KEY_O]!=GLFW_RELEASE);
+    if(oNow&&!oWasDown&&!ImGui::GetIO().WantCaptureKeyboard){
+        glm::ivec3 bestDoor(0); float bestDist=3.5f; bool found=false;
+        for(auto& kv:_blocks){if(kv.second!=BT_DOOR)continue;float d=glm::distance(glm::vec3(kv.first)+glm::vec3(0,2.5f,0),_playerPos+glm::vec3(0,1.2f,0));if(d<bestDist){bestDist=d;bestDoor=kv.first;found=true;}}
+        if(!found)for(auto& kv:_doorOpen){float d=glm::distance(glm::vec3(kv.first)+glm::vec3(0,2.5f,0),_playerPos+glm::vec3(0,1.2f,0));if(d<bestDist){bestDist=d;bestDoor=kv.first;found=true;}}
+        if(found&&!_doorAnim.count(bestDoor)){
+            if(_doorOpen.count(bestDoor)){_doorOpen.erase(bestDoor);DoorAnim da;da.angle=glm::half_pi<float>();da.target=0;da.speed=6.0f;_doorAnim[bestDoor]=da;}
+            else{DoorAnim da;da.angle=0;da.target=glm::half_pi<float>();da.speed=6.0f;_doorAnim[bestDoor]=da;}
+        }
+    }
+    oWasDown=oNow;
 
     if (_inventoryOpen) {
         _input.mouse.scroll.xOffset = 0;
@@ -1138,8 +1152,49 @@ bool MinecraftGame::resolvePlayerMovement(glm::vec3& pos, const glm::vec3& desir
     );
     bool onGround;
     glm::vec3 resolved = collideAndSlide(box, desired, _blocks, onGround,
-        [](int bt) { return bt != BT_WATER; });
+        [](int bt) { return bt != BT_WATER && bt != BT_DOOR; });
     pos += resolved;
+
+    const float Hw=1.0f, Hh=3.0f, Hd=0.35f, Fw=0.12f;
+    for(auto& kv:_blocks){
+        if(kv.second!=BT_DOOR)continue;
+        glm::ivec3 dp=kv.first;bool isOpen=_doorOpen.count(dp)||_doorAnim.count(dp);
+        float cy=(float)dp.y+2.5f, lowY=cy-Hh, highY=cy+Hh;
+        AABB pBox=AABB::fromMinMax(pos-glm::vec3(PLAYER_HALF_W,0,PLAYER_HALF_W),pos+glm::vec3(PLAYER_HALF_W,PLAYER_HALF_H*2,PLAYER_HALF_W));
+        if(!isOpen){
+            AABB doorBox=AABB::fromMinMax(glm::vec3(dp.x-Hw,lowY,dp.z-Hd),glm::vec3(dp.x+Hw,highY,dp.z+Hd));
+            if(!doorBox.overlaps(pBox))continue;
+            float ox=std::min(pBox.max.x-doorBox.min.x,doorBox.max.x-pBox.min.x),oy=std::min(pBox.max.y-doorBox.min.y,doorBox.max.y-pBox.min.y),oz=std::min(pBox.max.z-doorBox.min.z,doorBox.max.z-pBox.min.z);
+            float nox=ox/Hw, noy=oy/Hh, noz=oz/Hd;
+            if(noy<nox&&noy<noz){pos.y+=(pBox.min.y+pBox.max.y<doorBox.min.y+doorBox.max.y)?-oy:oy;if(pBox.min.y<doorBox.min.y+doorBox.max.y)onGround=true;}
+            else if(nox<noz)pos.x+=(pBox.min.x+pBox.max.x<doorBox.min.x+doorBox.max.x)?-ox:ox;
+            else pos.z+=(pBox.min.z+pBox.max.z<doorBox.min.z+doorBox.max.z)?-oz:oz;
+            continue;
+        }
+        float angle=_doorAnim.count(dp)?_doorAnim.at(dp).angle:glm::half_pi<float>();
+        float hingeX=(float)dp.x-Hw+Fw,hingeZ=(float)dp.z,panelW=(Hw-Fw)*2.0f,thick=Hd*0.6f,margin=0.4f;
+        bool yOk=(pos.y<highY-Fw)&&(pos.y+PLAYER_HALF_H*2>lowY+Fw);
+        if(yOk){
+            float cosA=cosf(angle),sinA=sinf(angle);
+            float heX=fabsf(cosA)*panelW*0.5f+fabsf(sinA)*thick*0.5f;
+            float heZ=fabsf(sinA)*panelW*0.5f+fabsf(cosA)*thick*0.5f;
+            float cX=hingeX+cosA*panelW*0.5f,cZ=hingeZ+sinA*panelW*0.5f;
+            float pMinX=cX-heX-margin,pMaxX=cX+heX+margin;
+            float pMinZ=cZ-heZ-margin,pMaxZ=cZ+heZ+margin;
+            if(pos.x+PLAYER_HALF_W>pMinX&&pos.x-PLAYER_HALF_W<pMaxX&&pos.z+PLAYER_HALF_W>pMinZ&&pos.z-PLAYER_HALF_W<pMaxZ){
+                float ovlX=std::min(pos.x+PLAYER_HALF_W-pMinX,pMaxX-(pos.x-PLAYER_HALF_W));
+                float ovlZ=std::min(pos.z+PLAYER_HALF_W-pMinZ,pMaxZ-(pos.z-PLAYER_HALF_W));
+                if(ovlX>0&&ovlZ>0){float nx=ovlX/(heX*2+margin),nz=ovlZ/(heZ*2+margin);
+                    if(nx<nz)pos.x+=(pos.x<cX)?-ovlX:ovlX;
+                    else pos.z+=(pos.z<cZ)?-ovlZ:ovlZ;}
+            }
+        }
+        AABB pBox2=AABB::fromMinMax(pos-glm::vec3(PLAYER_HALF_W,0,PLAYER_HALF_W),pos+glm::vec3(PLAYER_HALF_W,PLAYER_HALF_H*2,PLAYER_HALF_W));
+        AABB lb=AABB::fromMinMax(glm::vec3(dp.x-Hw,lowY,dp.z-Hd),glm::vec3(dp.x-Hw+Fw,highY,dp.z+Hd));if(lb.overlaps(pBox2))pos.x=dp.x-Hw+Fw+PLAYER_HALF_W;
+        AABB rb=AABB::fromMinMax(glm::vec3(dp.x+Hw-Fw,lowY,dp.z-Hd),glm::vec3(dp.x+Hw,highY,dp.z+Hd));if(rb.overlaps(pBox2))pos.x=dp.x+Hw-Fw-PLAYER_HALF_W;
+        // bottom threshold removed: player should walk through doorway freely
+        AABB tb=AABB::fromMinMax(glm::vec3(dp.x-Hw+Fw,highY-Fw,dp.z-Hd),glm::vec3(dp.x+Hw-Fw,highY,dp.z+Hd));if(tb.overlaps(pBox2))pos.y=highY-Fw-PLAYER_HALF_H*2;
+    }
     return onGround;
 }
 // ============================================================
@@ -1151,7 +1206,7 @@ int MinecraftGame::getBlock(int x, int y, int z) const {
 }
 bool MinecraftGame::isSolidBlock(int x, int y, int z) const {
     int bt = getBlock(x, y, z);
-    return bt != BT_AIR && bt != BT_WATER && bt != BT_LEAVES;
+    return bt != BT_AIR && bt != BT_WATER && bt != BT_LEAVES && bt != BT_DOOR;
 }
 // ============================================================
 // Render — instanced per block type
@@ -1168,7 +1223,7 @@ void MinecraftGame::drawBlocks(const glm::mat4& proj, const glm::mat4& view) {
     for (int bt = 1; bt < BT_COUNT; ++bt) posBuf[bt].clear();
 
     for (auto& kv : _blocks) {
-        if (kv.second == BT_AIR) continue;
+        if (kv.second == BT_AIR || kv.second == BT_DOOR) continue;
         posBuf[kv.second].push_back(glm::vec3(kv.first));
     }
 
@@ -1217,6 +1272,30 @@ void MinecraftGame::drawBlocks(const glm::mat4& proj, const glm::mat4& view) {
         op.shadowsOn = _shadowsOn;
         drawTexturedLit(_texLitShader, po.mesh.get(), model, 0,
             (float)ATLAS_COLS, _blockAtlas, proj, view, op);
+    }
+}
+
+void MinecraftGame::drawDoors(const glm::mat4& proj, const glm::mat4& view) {
+    const float Fw=0.12f, Hd=0.35f, Hw2=0.88f, Hh2=2.88f, Pw=1.76f, Ph=5.76f, Pd=0.35f;
+    glm::vec3 camPos=_firstPerson?(_playerPos+glm::vec3(0,1.7f,0)):_fc.position();
+    PhongParams pp=makePhongParams(camPos); pp.shadowsOn=_shadowsOn;
+    auto drawCube=[&](float cx,float cy,float cz,float sx,float sy,float sz,glm::vec3 col){
+        drawLit(_litShader,_cubeMesh.get(),glm::translate(glm::mat4(1),glm::vec3(cx,cy,cz))*glm::scale(glm::mat4(1),glm::vec3(sx,sy,sz)),col,proj,view,pp);
+    };
+    for(auto& kv:_blocks){
+        if(kv.second!=BT_DOOR)continue;
+        glm::ivec3 dp=kv.first; float cy=(float)dp.y+2.5f;
+        drawCube(dp.x-1.0f+Fw*0.5f,cy,dp.z,Fw,6.0f,Hd*2.0f,glm::vec3(0.45f,0.25f,0.10f));
+        drawCube(dp.x+1.0f-Fw*0.5f,cy,dp.z,Fw,6.0f,Hd*2.0f,glm::vec3(0.45f,0.25f,0.10f));
+        drawCube(dp.x,cy-3.0f+Fw*0.5f,dp.z,Hw2*2.0f,Fw,Hd*2.0f,glm::vec3(0.45f,0.25f,0.10f));
+        drawCube(dp.x,cy+3.0f-Fw*0.5f,dp.z,Hw2*2.0f,Fw,Hd*2.0f,glm::vec3(0.45f,0.25f,0.10f));
+        float angle=_doorAnim.count(dp)?_doorAnim.at(dp).angle:_doorOpen.count(dp)?glm::half_pi<float>():0.0f;
+        float hingeX=dp.x-1.0f+Fw;
+        auto pModel=glm::translate(glm::mat4(1),glm::vec3(hingeX,cy,dp.z))
+                    *glm::rotate(glm::mat4(1),angle,glm::vec3(0,1,0))
+                    *glm::translate(glm::mat4(1),glm::vec3(Pw*0.5f,0,0))
+                    *glm::scale(glm::mat4(1),glm::vec3(Pw,Ph,Pd*2.0f));
+        drawLit(_litShader,_cubeMesh.get(),pModel,glm::vec3(0.75f,0.50f,0.25f),proj,view,pp);
     }
 }
 
@@ -1431,6 +1510,12 @@ ImGui::End();
 void MinecraftGame::renderFrame() {
     _animator.update(_deltaTime);
 
+    for(auto it=_doorAnim.begin();it!=_doorAnim.end();){
+        auto& da=it->second;float diff=da.target-da.angle;
+        if(fabsf(diff)<0.01f){da.angle=da.target;if(da.target>1.5f)_doorOpen[it->first]=true;it=_doorAnim.erase(it);}
+        else{da.angle+=(diff>0?1:-1)*std::min(da.speed*_deltaTime,fabsf(diff));++it;}
+    }
+
     // === Shadow pass ===
     renderShadowPass();
 
@@ -1460,6 +1545,7 @@ void MinecraftGame::renderFrame() {
 
     // World blocks
     drawBlocks(proj, view);
+    drawDoors(proj, view);
 
     // Ghost preview
     drawGhost(proj, view);
