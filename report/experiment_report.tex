@@ -1,11 +1,11 @@
-\documentclass[12pt,a4paper]{ctexart}
-
-% === Packages ===
+\documentclass{article}
+\usepackage{ctex}
+\usepackage{graphicx}
 \usepackage{geometry}
 \geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
-\usepackage{graphicx}
 \usepackage{float}
 \usepackage{hyperref}
+\hypersetup{hidelinks}
 \usepackage{enumitem}
 \usepackage{listings}
 \usepackage{xcolor}
@@ -32,15 +32,43 @@
 \fancyhead[L]{计算机图形学课程实验报告}
 \fancyhead[R]{\thepage}
 \renewcommand{\headrulewidth}{0.4pt}
+\setlength{\headheight}{14.5pt}
 
 \title{\textbf{计算机图形学课程实验报告}\\[6pt]
        \large 基于OpenGL的三维图形引擎与Minecraft风格游戏}
-\author{姓名：\_\_\_\_\_\_\_\_ \quad 学号：\_\_\_\_\_\_\_\_ \quad 班级：\_\_\_\_\_\_\_\_}
-\date{\today}
 
 \begin{document}
-\maketitle
-\thispagestyle{empty}
+
+% ============================================================
+% Title Page
+% ============================================================
+\begin{titlepage}
+    \centering
+    \vspace*{2cm}
+    \begin{center}
+        \zihao{1}\heiti
+        计算机图形学课程实验报告
+    \end{center}
+    \newcommand\ful[2][5cm]{\underline{\makebox[#1][c]{#2}}}
+    \vskip 1.5cm
+    \begin{center}
+        \zihao{2}\heiti
+        基于OpenGL的三维图形引擎\\[4pt]
+        与Minecraft风格游戏
+    \end{center}
+    \vskip 2.5cm
+    \begin{center}
+        \zihao{4}
+        姓\hspace{1em}名：\ful{杨征雨}\\[12pt]
+        学\hspace{1em}号：\ful{3230105712}\\[12pt]
+        学\hspace{1em}院：\ful{竺可桢学院}\\[12pt]
+        专\hspace{1em}业：\ful{人工智能}
+    \end{center}
+    \vfill
+    \Large
+    \today
+\end{titlepage}
+
 \newpage
 \tableofcontents
 \newpage
@@ -139,14 +167,19 @@ Fragment Shader 中根据顶点法线方向动态选择对应的 tile（顶面 /
 
 \subsection{光照模型}
 
-基于 Blinn-Phong 模型实现，包含三层光源（完整 shader 见 \texttt{src/render\_util/simple\_lit.h}）：
+基于 Blinn-Phong 模型实现，包含三层光源（完整 shader 见 \texttt{src/render\_util/simple\_lit.h}），公式如下：
+
 \[
-L = \underbrace{k_a \cdot C \cdot (0.5 + 0.5 N_y)}_{\text{半球环境光}} + \underbrace{S \cdot [k_d \cdot C \cdot (N \cdot L) + k_s \cdot (R \cdot V)^\alpha]}_{\text{平行光(太阳) diffuse+specular}} + \underbrace{\frac{I}{k_c + k_l d + k_q d^2} \cdot C_p \cdot [\text{diffuse} + \text{specular}]}_{\text{点光源}}
+\begin{aligned}
+L = &\underbrace{k_a \cdot C \cdot (0.5 + 0.5 N_y)}_{\text{半球环境光}} \\
+    &+ \underbrace{S \cdot \big[k_d \cdot C \cdot (N \cdot L) + k_s \cdot (R \cdot V)^\alpha\big]}_{\text{平行光 diffuse+specular}} \\
+    &+ \underbrace{\frac{I}{k_c + k_l d + k_q d^2} \cdot C_p \cdot \big[\text{diffuse} + \text{specular}\big]}_{\text{点光源}}
+\end{aligned}
 \]
 
 其中 $S$ 为阴影因子（见第 \ref{sec:shadow} 节）。最终输出经过 Gamma 校正（$\gamma = 2.2$）。
 
-\subsection{光源编辑}
+\subsubsection{光源编辑}
 通过 ImGui 面板可实时编辑：
 \begin{itemize}[nosep]
     \item 太阳方向向量、颜色（暖色调 1.0/0.95/0.85）
@@ -245,7 +278,7 @@ L = \underbrace{k_a \cdot C \cdot (0.5 + 0.5 N_y)}_{\text{半球环境光}} + \u
 
 \subsubsection{Shadow Pass（\texttt{renderShadowPass()}）}
 \begin{itemize}[nosep]
-    \item 2048×2044 深度纹理（\texttt{GL\_DEPTH\_COMPONENT}, float）
+    \item 2048×2048 深度纹理（\texttt{GL\_DEPTH\_COMPONENT}, float）
     \item 正交投影光源空间矩阵：以玩家位置为中心，范围 30×30
     \item 使用 \texttt{glCullFace(GL\_FRONT)} 消除 peter-panning 伪影
     \item 深度着色器仅写入深度，不输出颜色
@@ -313,7 +346,7 @@ L = \underbrace{k_a \cdot C \cdot (0.5 + 0.5 N_y)}_{\text{半球环境光}} + \u
           \end{itemize}
 \end{itemize}
 
-这三种建筑对象的行为差异明确：\textbf{门}可交互开关、\textbf{窗}可穿过可破坏、\textbf{墙}始终阻塞。符合 README 中“如 PUBG 的模型中：关闭的门不可通行，可以按键打开，打开后可通行；窗可打碎、翻越；墙始终不可通行”的要求。
+这三种建筑对象的行为差异明确：\textbf{门}可交互开关、\textbf{窗}可穿过可破坏、\textbf{墙}始终阻塞。符合“关闭的门不可通行，可以按键打开，打开后可通行；窗可打碎、翻越；墙始终不可通行”的要求。
 
 % ============================================================
 \section{核心算法详解}
@@ -333,7 +366,7 @@ float MinecraftGame::getTerrainHeight(float wx, float wz) const {
 }
 \end{lstlisting}
 
-根据高度值分层放置方块：低于高度 → 石头，等于高度 −1 → 泥土，等于高度 → 草方块。低于水位线 → 沙地/水。
+根据高度值分层放置方块：低于高度 → 石头，等于高度 $-1$ → 泥土，等于高度 → 草方块。低于水位线 → 沙地/水。
 
 \subsection{碰撞检测算法}
 
@@ -360,8 +393,24 @@ h_z &= |\sin\theta| \cdot \frac{W}{2} + |\cos\theta| \cdot \frac{T}{2}
 其中 $W$ 为门扇宽度（1.76），$T$ 为厚度（0.21）。\texttt{resolvePlayerMovement()} 中用 $\cos\theta$ 和 $\sin\theta$ 计算真实 AABB，沿最短重叠轴推出玩家，保证任意旋转角度下碰撞均精确有效。
 
 % ============================================================
-\section{操作说明}
+\section{运行与编译}
 % ============================================================
+
+\subsection{编译方法}
+\begin{lstlisting}[language=bash]
+cd final
+mkdir build && cd build
+cmake .. -G "Visual Studio 17 2022"
+cmake --build . --config Release
+\end{lstlisting}
+
+编译产物位于 \texttt{build/bin/Release/}：
+\begin{itemize}[nosep]
+    \item \texttt{final\_project.exe} —— 主游戏程序
+    \item \texttt{01\_primitives.exe} ～ \texttt{09\_skeletal.exe} —— 各模块演示程序
+\end{itemize}
+
+\subsection{操作说明}
 
 \begin{itemize}[nosep]
     \item \textbf{WASD：} 移动 \quad \textbf{Space：} 跳跃
