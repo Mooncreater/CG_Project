@@ -38,34 +38,67 @@ enum BlockType : int {
     BT_SAND,
     BT_WATER,
     BT_DOOR,
+    BT_BRICK,
+    BT_COBBLESTONE,
+    BT_GLASS,
+    BT_PLANKS,
+    BT_OBSIDIAN,
+    BT_SNOW,
+    BT_GRAVEL,
+    BT_GLOWSTONE,
+    BT_BOOKSHELF,
+    BT_LOG,
+    BT_IRON,
     BT_COUNT
 };
 
 inline const char* blockTypeName(int t) {
     switch (t) {
-        case BT_GRASS:  return "Grass";
-        case BT_DIRT:   return "Dirt";
-        case BT_STONE:  return "Stone";
-        case BT_WOOD:   return "Wood";
-        case BT_LEAVES: return "Leaves";
-        case BT_SAND:   return "Sand";
-        case BT_WATER:  return "Water";
-        case BT_DOOR:   return "Door";
-        default:        return "???";
+        case BT_GRASS:      return "Grass";
+        case BT_DIRT:       return "Dirt";
+        case BT_STONE:      return "Stone";
+        case BT_WOOD:       return "Wood";
+        case BT_LEAVES:     return "Leaves";
+        case BT_SAND:       return "Sand";
+        case BT_WATER:      return "Water";
+        case BT_DOOR:       return "Door";
+        case BT_BRICK:      return "Brick";
+        case BT_COBBLESTONE:return "Cobblestone";
+        case BT_GLASS:      return "Glass";
+        case BT_PLANKS:     return "Planks";
+        case BT_OBSIDIAN:   return "Obsidian";
+        case BT_SNOW:       return "Snow";
+        case BT_GRAVEL:     return "Gravel";
+        case BT_GLOWSTONE:  return "Glowstone";
+        case BT_BOOKSHELF:  return "Bookshelf";
+        case BT_LOG:        return "Log";
+        case BT_IRON:       return "Iron";
+        default:            return "???";
     }
 }
 
 inline glm::vec3 blockTypeColor(int t) {
     switch (t) {
-        case BT_GRASS:  return {0.35f, 0.65f, 0.25f};
-        case BT_DIRT:   return {0.55f, 0.40f, 0.25f};
-        case BT_STONE:  return {0.50f, 0.50f, 0.50f};
-        case BT_WOOD:   return {0.55f, 0.40f, 0.20f};
-        case BT_LEAVES: return {0.20f, 0.55f, 0.15f};
-        case BT_SAND:   return {0.85f, 0.80f, 0.55f};
-        case BT_WATER:  return {0.25f, 0.45f, 0.85f};
-        case BT_DOOR:   return {0.60f, 0.35f, 0.15f};
-        default:        return {0.50f, 0.50f, 0.50f};
+        case BT_GRASS:      return {0.35f, 0.65f, 0.25f};
+        case BT_DIRT:       return {0.55f, 0.40f, 0.25f};
+        case BT_STONE:      return {0.50f, 0.50f, 0.50f};
+        case BT_WOOD:       return {0.55f, 0.40f, 0.20f};
+        case BT_LEAVES:     return {0.20f, 0.55f, 0.15f};
+        case BT_SAND:       return {0.85f, 0.80f, 0.55f};
+        case BT_WATER:      return {0.25f, 0.45f, 0.85f};
+        case BT_DOOR:       return {0.60f, 0.35f, 0.15f};
+        case BT_BRICK:      return {0.65f, 0.25f, 0.20f};
+        case BT_COBBLESTONE:return {0.40f, 0.40f, 0.40f};
+        case BT_GLASS:      return {0.70f, 0.85f, 0.95f};
+        case BT_PLANKS:     return {0.73f, 0.55f, 0.30f};
+        case BT_OBSIDIAN:   return {0.08f, 0.03f, 0.15f};
+        case BT_SNOW:       return {0.95f, 0.97f, 1.00f};
+        case BT_GRAVEL:     return {0.45f, 0.42f, 0.38f};
+        case BT_GLOWSTONE:  return {0.95f, 0.85f, 0.45f};
+        case BT_BOOKSHELF:  return {0.55f, 0.35f, 0.18f};
+        case BT_LOG:        return {0.40f, 0.25f, 0.10f};
+        case BT_IRON:       return {0.70f, 0.70f, 0.72f};
+        default:            return {0.50f, 0.50f, 0.50f};
     }
 }
 
@@ -121,6 +154,12 @@ private:
     TexturedLitShader _texLitShader;
     std::unique_ptr<Mesh> _earthMesh;
     GLuint _earthTex = 0;
+
+    // Steve face texture overlay
+    GLuint _faceTex = 0;
+    GLuint _faceQuadVAO = 0, _faceQuadVBO = 0;
+    std::unique_ptr<GLSLProgram> _faceShader;
+    void initFaceQuad();
     std::vector<std::unique_ptr<Mesh>> _primitiveMeshes;
     std::vector<std::string> _primitiveNames;
 
@@ -142,7 +181,8 @@ private:
     static constexpr int ATLAS_COLS = 8;
     static constexpr int TILE_PX = 128;
 
-    std::unordered_map<glm::ivec3, int, ivec3_hash> _blocks;  // pos → BlockType
+    std::unordered_map<glm::ivec3, int, ivec3_hash> _blocks;
+    int _blockCounts[BT_COUNT] = {};  // inventory count per block type  // pos → BlockType
     std::vector<DroppedItem> _droppedItems;
 
     // Instanced rendering

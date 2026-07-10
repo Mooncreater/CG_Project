@@ -79,3 +79,11 @@ void SkinnedMesh::draw() const {
     glDrawElements(GL_TRIANGLES, (GLsizei)_indexCount, GL_UNSIGNED_INT, 0);
     glBindVertexArray(0);
 }
+
+void SkinnedMesh::drawRange(uint32_t startIndex, uint32_t count) const {
+    if (_vao == 0 || count == 0) return;
+    glBindVertexArray(_vao);
+    glDrawElements(GL_TRIANGLES, (GLsizei)count, GL_UNSIGNED_INT,
+                   (void*)(startIndex * sizeof(uint32_t)));
+    glBindVertexArray(0);
+}

@@ -29,6 +29,7 @@ public:
     SkinnedMesh& operator=(const SkinnedMesh&) = delete;
 
     void draw() const;
+    void drawRange(uint32_t startIndex, uint32_t count) const;
     uint32_t indexCount() const { return _indexCount; }
 
 private:

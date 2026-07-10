@@ -14,6 +14,14 @@ public:
     std::unique_ptr<SkinnedMesh> buildMesh();
     AnimationClip idleClip,waveClip,attackClip,walkClip,jumpClip;
     enum BoneIdx{ROOT=0,SPINE=1,HEAD=2,L_UPPER_ARM=3,L_FOREARM=4,R_UPPER_ARM=5,R_FOREARM=6,L_UPPER_LEG=7,L_LOWER_LEG=8,R_UPPER_LEG=9,R_LOWER_LEG=10,BONE_COUNT=11};
+
+    // Body part index ranges for multi-color rendering
+    struct PartRange { uint32_t start, count; };
+    PartRange headRange, bodyRange;
+    PartRange armL_upper, armL_lower, armR_upper, armR_lower;
+    PartRange legL_upper, legL_lower, legR_upper, legR_lower;
+    PartRange faceEyes, faceNose, faceMouth, hair;  // facial features
+
 private:
     Skeleton _skeleton;
     std::vector<SkinnedVertex>_vertices;

@@ -41,20 +41,63 @@ void HumanoidBuilder::buildSkeleton() {
 }
 
 void HumanoidBuilder::buildBodyParts() {
-    addBox(0.28f,0.30f,0.28f,HEAD,glm::vec3(0,1.10f,0));
-    addBox(0.28f,0.45f,0.15f,SPINE,glm::vec3(0,0.55f,0));
-    addBox(0.06f,0.06f,0.12f,L_UPPER_ARM,glm::vec3(0.33f,0.95f,0));
-    addBox(0.06f,0.06f,0.12f,R_UPPER_ARM,glm::vec3(-0.33f,0.95f,0));
-    addBox(0.07f,0.38f,0.07f,L_UPPER_ARM,glm::vec3(0.33f,0.76f,0));
-    addBox(0.07f,0.38f,0.07f,R_UPPER_ARM,glm::vec3(-0.33f,0.76f,0));
-    addBox(0.07f,0.35f,0.07f,L_FOREARM,glm::vec3(0.33f,0.38f,0));
-    addBox(0.07f,0.35f,0.07f,R_FOREARM,glm::vec3(-0.33f,0.38f,0));
-    addBox(0.09f,0.38f,0.09f,L_UPPER_LEG,glm::vec3(0.10f,-0.21f,0));
-    addBox(0.09f,0.38f,0.09f,R_UPPER_LEG,glm::vec3(-0.10f,-0.21f,0));
-    addBox(0.09f,0.38f,0.09f,L_LOWER_LEG,glm::vec3(0.10f,-0.59f,0));
-    addBox(0.09f,0.38f,0.09f,R_LOWER_LEG,glm::vec3(-0.10f,-0.59f,0));
-}
+    // Steve-style proportions (Minecraft: head=8, body=8x12x4, arms=4x12x4, legs=4x12x4 pixels)
+    // Scaled to our world units (1 block = 1 unit)
 
+    // Head: 0.48 x 0.50 x 0.48
+    addBox(0.48f, 0.50f, 0.48f, HEAD, glm::vec3(0, 1.15f, 0));
+    headRange = { (uint32_t)_indices.size() - 36, 36 };
+
+    // Face features on HEAD bone (character faces -Z)
+    // Eyes: dark boxes
+    addBox(0.08f, 0.07f, 0.03f, HEAD, glm::vec3(-0.13f, 1.30f, 0.25f));
+    addBox(0.08f, 0.07f, 0.03f, HEAD, glm::vec3( 0.13f, 1.30f, 0.25f));
+    faceEyes = { (uint32_t)_indices.size() - 72, 72 };
+
+    // Nose
+    addBox(0.08f, 0.08f, 0.06f, HEAD, glm::vec3(0, 1.18f, 0.28f));
+    faceNose = { (uint32_t)_indices.size() - 36, 36 };
+
+    // Mouth
+    addBox(0.18f, 0.05f, 0.03f, HEAD, glm::vec3(0, 1.06f, 0.25f));
+    faceMouth = { (uint32_t)_indices.size() - 36, 36 };
+
+    // Hair: dark brown box slightly larger on top/back/sides of head
+    addBox(0.52f, 0.18f, 0.52f, HEAD, glm::vec3(0, 1.44f, -0.02f));
+    hair = { (uint32_t)_indices.size() - 36, 36 };
+
+    // Body: 0.44 x 0.54 x 0.22
+    addBox(0.44f, 0.54f, 0.22f, SPINE, glm::vec3(0, 0.47f, 0));
+    bodyRange = { (uint32_t)_indices.size() - 36, 36 };
+
+    // Shoulder joints (hidden inside body)
+    addBox(0.14f, 0.14f, 0.14f, L_UPPER_ARM, glm::vec3(0.36f, 0.92f, 0));
+    addBox(0.14f, 0.14f, 0.14f, R_UPPER_ARM, glm::vec3(-0.36f, 0.92f, 0));
+
+    // Upper arms: 0.20 x 0.46 x 0.20
+    addBox(0.20f, 0.46f, 0.20f, L_UPPER_ARM, glm::vec3(0.36f, 0.68f, 0));
+    armL_upper = { (uint32_t)_indices.size() - 36, 36 };
+    addBox(0.20f, 0.46f, 0.20f, R_UPPER_ARM, glm::vec3(-0.36f, 0.68f, 0));
+    armR_upper = { (uint32_t)_indices.size() - 36, 36 };
+
+    // Forearms: 0.18 x 0.44 x 0.18
+    addBox(0.18f, 0.44f, 0.18f, L_FOREARM, glm::vec3(0.36f, 0.28f, 0));
+    armL_lower = { (uint32_t)_indices.size() - 36, 36 };
+    addBox(0.18f, 0.44f, 0.18f, R_FOREARM, glm::vec3(-0.36f, 0.28f, 0));
+    armR_lower = { (uint32_t)_indices.size() - 36, 36 };
+
+    // Upper legs: 0.22 x 0.46 x 0.22
+    addBox(0.22f, 0.46f, 0.22f, L_UPPER_LEG, glm::vec3(0.14f, -0.27f, 0));
+    legL_upper = { (uint32_t)_indices.size() - 36, 36 };
+    addBox(0.22f, 0.46f, 0.22f, R_UPPER_LEG, glm::vec3(-0.14f, -0.27f, 0));
+    legR_upper = { (uint32_t)_indices.size() - 36, 36 };
+
+    // Lower legs: 0.20 x 0.46 x 0.20
+    addBox(0.20f, 0.46f, 0.20f, L_LOWER_LEG, glm::vec3(0.14f, -0.70f, 0));
+    legL_lower = { (uint32_t)_indices.size() - 36, 36 };
+    addBox(0.20f, 0.46f, 0.20f, R_LOWER_LEG, glm::vec3(-0.14f, -0.70f, 0));
+    legR_lower = { (uint32_t)_indices.size() - 36, 36 };
+}
 void HumanoidBuilder::addBox(float w,float h,float d,int bid,glm::vec3 pos){
     auto v=makeBox(w,h,d,bid);for(auto&x:v)x.position+=pos;
     uint32_t base=(uint32_t)_vertices.size();auto idx=makeBoxIndices(base);
