@@ -4,7 +4,6 @@ build/
 CMakeUserPresets.json
 out/
 
-media/
 
 # LaTeX aux files
 report/*.aux

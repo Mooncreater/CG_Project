@@ -1,0 +1,15 @@
+# Exclude large OBJ/models (use sparse checkout or LFS for these)
+obj/exported_scene.obj
+obj/lucy.obj
+obj/dragon.obj
+obj/bunny.obj
+obj/DamagedHelmet.gltf
+
+# Large textures (keep procedural ones)
+texture/hdr/
+texture/skybox/
+texture/skybox_mountain/
+texture/skyboxrt/
+
+# Binary scene data
+obj/scene.bin
