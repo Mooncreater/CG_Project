@@ -133,6 +133,16 @@ struct PlacedObj {
     float scale = 1.0f;
 };
 
+// ============================================================
+// Snow particle
+// ============================================================
+struct SnowParticle {
+    glm::vec3 pos;
+    glm::vec3 vel;
+    float life = 0;
+    float size = 0.08f;
+};
+
 class MinecraftGame : public Application {
 public:
     MinecraftGame(const Options& options);
@@ -175,6 +185,7 @@ private:
 
     // Inventory
     bool _inventoryOpen = false;
+    bool _settingsOpen = false;
     InstancedTexturedLitShader _instTexLitShader;
     GLuint _blockAtlas = 0;
     static constexpr int ATLAS_SIZE = 1024;
@@ -209,7 +220,6 @@ private:
 
     // ===== Blocks / Inventory =====
     int _selectedBlock = BT_GRASS;
-    bool _settingsOpen = false;
 
     // ===== Ghost block preview =====
     glm::ivec3 _ghostHit{0};
@@ -252,6 +262,7 @@ private:
     bool _zoomedOut = false;
 
     // ===== First/third person =====
+    // ===== First/third person =====
     bool _firstPerson = false;
     float _fpPitch = 0;
     float _prevMX = 0, _prevMY = 0;
@@ -266,6 +277,19 @@ private:
     void initWorld();
     void generateTerrain();
     void placeTree(int bx, int by, int bz);
+
+    // ===== Snow weather =====
+    bool _snowOn = false;
+    static constexpr int MAX_SNOW = 2000;
+    static constexpr float SNOW_SPAWN_RADIUS = 20.0f;
+    static constexpr float SNOW_SPAWN_HEIGHT = 18.0f;
+    static constexpr float SNOW_FALL_SPEED = 2.5f;
+    std::vector<SnowParticle> _snowParticles;
+    GLuint _snowVAO = 0, _snowVBO = 0;
+    std::unique_ptr<GLSLProgram> _snowShader;
+    void initSnow();
+    void updateSnow(float dt);
+    void drawSnow(const glm::mat4& proj, const glm::mat4& view);
 
     // ===== Texture atlas =====
     void buildTextureAtlas();

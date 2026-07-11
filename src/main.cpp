@@ -8,7 +8,7 @@ int main(int argc, char* argv[]) {
     options.windowHeight = 720;
     options.windowResizable = true;
     options.vSync = true;
-    options.assetRootDir = "D:/.zju/Professional_courses/CG/final/media";
+    options.assetRootDir = "media";
     options.glVersion = {3, 3};
     options.backgroundColor = glm::vec4(0.08f, 0.12f, 0.22f, 1.0f);
 

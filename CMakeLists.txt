@@ -100,3 +100,7 @@ set_target_properties(final_project PROPERTIES CXX_STANDARD 17 CXX_STANDARD_REQU
 if(MSVC)
     target_compile_options(final_project PRIVATE /utf-8)
 endif()
+
+if(MSVC)
+    target_link_options(final_project PRIVATE /SUBSYSTEM:WINDOWS /ENTRY:mainCRTStartup)
+endif()

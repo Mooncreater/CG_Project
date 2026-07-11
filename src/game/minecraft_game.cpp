@@ -291,6 +291,7 @@ MinecraftGame::MinecraftGame(const Options& o) : Application(o), _worldSeed(42) 
     _fc.pitch = 25;
 
     initShadowMap();
+    initSnow();
 }
 
 MinecraftGame::~MinecraftGame() {
@@ -300,6 +301,8 @@ MinecraftGame::~MinecraftGame() {
     if (_faceTex) glDeleteTextures(1, &_faceTex);
     if (_faceQuadVAO) glDeleteVertexArrays(1, &_faceQuadVAO);
     if (_faceQuadVBO) glDeleteBuffers(1, &_faceQuadVBO);
+    if (_snowVAO) glDeleteVertexArrays(1, &_snowVAO);
+    if (_snowVBO) glDeleteBuffers(1, &_snowVBO);
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -317,7 +320,6 @@ void MinecraftGame::initWorld() {
         if (kv.second > 0 && kv.second < BT_COUNT)
             _blockCounts[kv.second]++;
 }
-
 void MinecraftGame::generateTerrain() {
     const int SZ = WORLD_SIZE;
     const int CLEAR_RADIUS = 14;
@@ -448,7 +450,7 @@ void MinecraftGame::placeTree(int bx, int by, int bz) {
     _blocks[{bx, leafBase + 3, bz}] = BT_LEAVES;
 }
 
-// ============================================================
+    // ===== Shadow Mapping =====
 // Shadow Mapping
 // ============================================================
 void MinecraftGame::initShadowMap() {
@@ -1037,12 +1039,151 @@ void MinecraftGame::initFaceQuad() {
 }
 
 // ============================================================
+// Snow weather system
+// ============================================================
+// ============================================================
+void MinecraftGame::initSnow() {
+    _snowParticles.reserve(MAX_SNOW);
+    for (int i = 0; i < MAX_SNOW; ++i) {
+        SnowParticle p;
+        p.pos = glm::vec3(
+            (rand() / (float)RAND_MAX * 2 - 1) * SNOW_SPAWN_RADIUS,
+            (rand() / (float)RAND_MAX) * SNOW_SPAWN_HEIGHT + 1.0f,
+            (rand() / (float)RAND_MAX * 2 - 1) * SNOW_SPAWN_RADIUS
+        );
+        p.vel = glm::vec3(
+            (rand() / (float)RAND_MAX - 0.5f) * 0.3f,
+            -SNOW_FALL_SPEED * (0.5f + (rand() / (float)RAND_MAX) * 0.5f),
+            (rand() / (float)RAND_MAX - 0.5f) * 0.3f
+        );
+        p.life = (rand() / (float)RAND_MAX);
+        p.size = 0.06f + (rand() / (float)RAND_MAX) * 0.10f;
+        _snowParticles.push_back(p);
+    }
+
+    // Snowflake billboard quad: two triangles
+    float w = 0.5f;
+    float verts[] = {
+        -w, -w, 0, 0, 0,   w, -w, 0, 1, 0,
+        -w,  w, 0, 0, 1,   w,  w, 0, 1, 1,
+    };
+    uint32_t idx[] = {0,1,2, 2,1,3};
+    glGenVertexArrays(1, &_snowVAO);
+    glGenBuffers(1, &_snowVBO);
+    GLuint ebo;
+    glGenBuffers(1, &ebo);
+    glBindVertexArray(_snowVAO);
+    glBindBuffer(GL_ARRAY_BUFFER, _snowVBO);
+    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
+    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
+    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(idx), idx, GL_STATIC_DRAW);
+    glEnableVertexAttribArray(0);
+    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    glEnableVertexAttribArray(1);
+    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    glBindVertexArray(0);
+    glDeleteBuffers(1, &ebo);
+
+    // Snow shader — billboard particle with soft edge
+    const char* svs = R"(#version 330 core
+        layout(location=0) in vec3 aP;
+        layout(location=1) in vec2 aUV;
+        out vec2 fuv;
+        uniform mat4 uVP;
+        uniform vec3 uWorldPos;
+        uniform vec3 uCamRight;
+        uniform vec3 uCamUp;
+        uniform float uSize;
+        void main(){
+            fuv = aUV;
+            vec3 offset = (aP.x * uCamRight + aP.y * uCamUp) * uSize;
+            vec3 pos = uWorldPos + offset;
+            gl_Position = uVP * vec4(pos, 1);
+        })";
+    const char* sfs = R"(#version 330 core
+        in vec2 fuv;
+        out vec4 o;
+        void main(){
+            float d = length(fuv - 0.5) * 2.0;
+            float alpha = smoothstep(1.0, 0.0, d) * 0.85;
+            o = vec4(1, 1, 1, alpha);
+        })";
+    _snowShader = std::make_unique<GLSLProgram>();
+    _snowShader->attachVertexShader(svs);
+    _snowShader->attachFragmentShader(sfs);
+    _snowShader->link();
+}
+
+void MinecraftGame::updateSnow(float dt) {
+    for (auto& p : _snowParticles) {
+        p.pos += p.vel * dt;
+        p.life += dt * 0.15f;
+
+        // Respawn if below terrain or too long lived
+        float terrainH = getTerrainHeight(p.pos.x, p.pos.z);
+        if (p.pos.y < terrainH - 1.0f || p.life > 1.0f) {
+            p.pos = glm::vec3(
+                _playerPos.x + (rand() / (float)RAND_MAX * 2 - 1) * SNOW_SPAWN_RADIUS,
+                _playerPos.y + SNOW_SPAWN_HEIGHT + (rand() / (float)RAND_MAX) * 8.0f,
+                _playerPos.z + (rand() / (float)RAND_MAX * 2 - 1) * SNOW_SPAWN_RADIUS
+            );
+            p.vel = glm::vec3(
+                (rand() / (float)RAND_MAX - 0.5f) * 0.3f,
+                -SNOW_FALL_SPEED * (0.5f + (rand() / (float)RAND_MAX) * 0.5f),
+                (rand() / (float)RAND_MAX - 0.5f) * 0.3f
+            );
+            p.life = 0;
+            p.size = 0.06f + (rand() / (float)RAND_MAX) * 0.10f;
+        }
+    }
+}
+
+void MinecraftGame::drawSnow(const glm::mat4& proj, const glm::mat4& view) {
+    if (!_snowOn || _snowParticles.empty()) return;
+    auto vp = proj * view;
+
+    // Extract camera right & up from view matrix (inverse of view)
+    glm::mat4 invView = glm::inverse(view);
+    glm::vec3 camRight = glm::normalize(glm::vec3(invView[0]));
+    glm::vec3 camUp    = glm::normalize(glm::vec3(invView[1]));
+
+    _snowShader->use();
+    _snowShader->setUniformMat4("uVP", vp);
+    _snowShader->setUniformVec3("uCamRight", camRight);
+    _snowShader->setUniformVec3("uCamUp", camUp);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+    glDepthMask(GL_FALSE);
+
+    glBindVertexArray(_snowVAO);
+    for (auto& p : _snowParticles) {
+        // Simple frustum cull – skip particles behind camera or too far
+        glm::vec4 clip = vp * glm::vec4(p.pos, 1.0f);
+        if (clip.w <= 0) continue;
+        glm::vec3 ndc = glm::vec3(clip) / clip.w;
+        if (ndc.z < -1.0f || ndc.z > 1.0f) continue;
+        if (ndc.x < -1.5f || ndc.x > 1.5f || ndc.y < -1.5f || ndc.y > 1.5f) continue;
+
+        _snowShader->setUniformVec3("uWorldPos", p.pos);
+        _snowShader->setUniformFloat("uSize", p.size);
+        glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
+    }
+
+    glBindVertexArray(0);
+    glDepthMask(GL_TRUE);
+    glDisable(GL_BLEND);
+}
+
+// ============================================================
 // Input — dispatch
 // ============================================================
 void MinecraftGame::handleInput() {
     _gameTime += _deltaTime;
     if (_screenshotFlash > 0) _screenshotFlash -= _deltaTime;
 
+    // Snow update
+    if (_snowOn) updateSnow(_deltaTime);
+
+    // Smooth FPS: exponential moving average
     // Smooth FPS: exponential moving average
     if (_deltaTime > 0) {
         float instantFPS = 1.0f / _deltaTime;
@@ -1628,7 +1769,7 @@ void MinecraftGame::drawBlocks(const glm::mat4& proj, const glm::mat4& view) {
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     int transTypes[] = {BT_WATER, BT_LEAVES, BT_GLASS, BT_GLOWSTONE, BT_SNOW};
-    for (int ti = 0; ti < 2; ++ti) {
+    for (int ti = 0; ti < 5; ++ti) {
         int bt = transTypes[ti];
         if (posBuf[bt].empty()) continue;
 
@@ -1842,17 +1983,7 @@ void MinecraftGame::drawUI() {
             ImGui::Text("Screenshot saved!");
             ImGui::PopStyleColor();
         }
-        ImGui::SetNextWindowPos(ImVec2(10, 10), ImGuiCond_Always);
-        ImGui::Begin("Info", nullptr, ImGuiWindowFlags_AlwaysAutoResize | ImGuiWindowFlags_NoTitleBar);
-        ImGui::Text("WASD=Move | Space=Jump | V=1st/3rd");
-        ImGui::Text("LClick=Place | RClick=Destroy | E=Bag");
-        ImGui::Text("1-9=QuickSlot | Wheel=Scroll | F2=Screen");
-        ImGui::Text("Selected: %s (x%d)", blockTypeName(_selectedBlock), _blockCounts[_selectedBlock]);
-        if (!_firstPerson)
-            ImGui::Text("[3rd] RightDrag=Orbit Scroll=Zoom | MButton=Pan | F=ZoomFit");
-        else
-            ImGui::Text("[1st] Mouse=Look");
-        ImGui::End();
+
     }
 
     // Bag button — bottom-right, outside hotbar area
@@ -1875,7 +2006,6 @@ void MinecraftGame::drawUI() {
         ImGui::End();
     }
 
-    // Lighting panel — only when settings open
     if (_settingsOpen) {
         ImGui::SetNextWindowPos(ImVec2((float)_windowWidth - 285, 85), ImGuiCond_FirstUseEver);
         ImGui::Begin("Settings (Phong Lighting)", &_settingsOpen, ImGuiWindowFlags_AlwaysAutoResize);
@@ -1908,6 +2038,10 @@ void MinecraftGame::drawUI() {
         ImGui::Text("Shadow Mapping");
         ImGui::Checkbox("Shadows", &_shadowsOn);
         ImGui::SliderFloat("Bias", &_shadowBias, 0.0001f, 0.01f, "%.4f");
+
+        ImGui::Separator();
+        ImGui::Text("Weather");
+        ImGui::Checkbox("Snow", &_snowOn);
 
         if (ImGui::Button("Reset Light")) {
             _sunDir = {0.5f, 1.0f, 0.3f};
@@ -2067,6 +2201,9 @@ void MinecraftGame::renderFrame() {
     glDepthFunc(GL_LEQUAL);
     _skybox->draw(proj, glm::mat4(glm::mat3(view)));
     glDepthFunc(GL_LESS);
+
+    // Snow weather
+    drawSnow(proj, view);
 
     // World blocks
     drawBlocks(proj, view);
