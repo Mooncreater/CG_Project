@@ -2,7 +2,9 @@
 #include <functional>
 
 #include "../base/application.h"
+#include "../base/buffer.h"
 #include "../base/skybox.h"
+#include "../base/vertex_array.h"
 #include "../animation/skeleton.h"
 #include "../animation/animation_clip.h"
 #include "../animation/animator.h"
@@ -167,7 +169,9 @@ private:
 
     // Steve face texture overlay
     GLuint _faceTex = 0;
-    GLuint _faceQuadVAO = 0, _faceQuadVBO = 0;
+    VertexArray _faceQuadVao;
+    VertexBuffer _faceQuadVbo;
+    IndexBuffer _faceQuadIbo;
     std::unique_ptr<GLSLProgram> _faceShader;
     void initFaceQuad();
     std::vector<std::unique_ptr<Mesh>> _primitiveMeshes;
@@ -197,8 +201,12 @@ private:
     std::vector<DroppedItem> _droppedItems;
 
     // Instanced rendering
-    GLuint _instancedCubeVAO = 0;
-    GLuint _instanceVBO = 0;
+    VertexArray _instancedCubeVao;
+    VertexBuffer _instancedCubePosVbo;
+    VertexBuffer _instancedCubeNormVbo;
+    VertexBuffer _instancedCubeUvVbo;
+    IndexBuffer _instancedCubeIbo;
+    VertexBuffer _instanceVbo;
 
     // ===== Camera =====
     FreeCamera _fc;
@@ -285,7 +293,9 @@ private:
     static constexpr float SNOW_SPAWN_HEIGHT = 18.0f;
     static constexpr float SNOW_FALL_SPEED = 2.5f;
     std::vector<SnowParticle> _snowParticles;
-    GLuint _snowVAO = 0, _snowVBO = 0;
+    VertexArray _snowVao;
+    VertexBuffer _snowVbo;
+    IndexBuffer _snowIbo;
     std::unique_ptr<GLSLProgram> _snowShader;
     void initSnow();
     void updateSnow(float dt);

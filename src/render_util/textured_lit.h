@@ -3,6 +3,7 @@
 // Supports per-face tile selection from a texture atlas via vertex normal
 
 #include "../base/glsl_program.h"
+#include "../base/vertex_array.h"
 #include "../mesh/mesh.h"
 #include <glm/glm.hpp>
 #include <glm/gtc/matrix_transform.hpp>
@@ -249,7 +250,7 @@ inline void drawTexturedLit(TexturedLitShader& shader,
 
 // Instanced draw — one call per block type, all positions in instance buffer
 inline void drawTexturedLitInstanced(InstancedTexturedLitShader& shader,
-                                     GLuint vao,
+                                     const VertexArray& vao,
                                      int indexCount,
                                      int instanceCount,
                                      int baseTile,
@@ -289,7 +290,6 @@ inline void drawTexturedLitInstanced(InstancedTexturedLitShader& shader,
     } else {
         shader->setUniformInt("uShadowMap", 0);
     }
-    glBindVertexArray(vao);
+    vao.bind();
     glDrawElementsInstanced(GL_TRIANGLES, indexCount, GL_UNSIGNED_INT, 0, instanceCount);
-    glBindVertexArray(0);
 }

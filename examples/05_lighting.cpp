@@ -183,4 +183,4 @@ void main(){}
     }
 };
 
-int main(){Options o;o.windowTitle="05 Lighting+Shadow";o.assetRootDir="D:/.zju/Professional_courses/CG/final/media";o.windowWidth=1100;o.windowHeight=800;o.glVersion={3,3};Demo app(o);app.run();return 0;}
+int main(){Options o;o.windowTitle="05 Lighting+Shadow";o.assetRootDir="media";o.windowWidth=1100;o.windowHeight=800;o.glVersion={3,3};Demo app(o);app.run();return 0;}

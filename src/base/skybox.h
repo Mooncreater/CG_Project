@@ -6,27 +6,27 @@
 
 #include <glm/glm.hpp>
 
+#include "buffer.h"
 #include "gl_utility.h"
 #include "glsl_program.h"
 #include "texture_cubemap.h"
+#include "vertex_array.h"
 
 class SkyBox {
 public:
     SkyBox(const std::vector<std::string>& textureFilenames);
 
-    SkyBox(SkyBox&& rhs) noexcept;
+    SkyBox(SkyBox&& rhs) noexcept = default;
 
-    ~SkyBox();
+    ~SkyBox() = default;
 
     void draw(const glm::mat4& projection, const glm::mat4& view);
 
 private:
-    GLuint _vao = 0;
-    GLuint _vbo = 0;
+    VertexArray _vao;
+    VertexBuffer _vbo;
 
     std::unique_ptr<TextureCubemap> _texture;
 
     std::unique_ptr<GLSLProgram> _shader;
-
-    void cleanup();
 };

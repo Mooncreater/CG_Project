@@ -36,4 +36,4 @@ struct Demo : Application {
         ImGui::End();ImGui::Render();ImGui_ImplOpenGL3_RenderDrawData(ImGui::GetDrawData());
     }
 };
-int main(){Options o;o.windowTitle="04 Transform";o.assetRootDir="D:/.zju/Professional_courses/CG/final/media";o.windowWidth=1024;o.windowHeight=768;o.glVersion={3,3};Demo app(o);app.run();return 0;}
+int main(){Options o;o.windowTitle="04 Transform";o.assetRootDir="media";o.windowWidth=1024;o.windowHeight=768;o.glVersion={3,3};Demo app(o);app.run();return 0;}

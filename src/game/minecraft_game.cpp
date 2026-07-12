@@ -9,7 +9,6 @@
 #include <cstring>
 #include <cstdio>
 #include <algorithm>
-#include <direct.h>
 #include <stb_image_write.h>
 #include <stb_image.h>
 #include <functional>
@@ -204,45 +203,44 @@ MinecraftGame::MinecraftGame(const Options& o) : Application(o), _worldSeed(42) 
     // Setup instanced VAO (cube mesh + instance position buffer)
     {
         auto cubeData = Primitives::CreateCube(1.0f);
-        glGenVertexArrays(1, &_instancedCubeVAO);
-        glBindVertexArray(_instancedCubeVAO);
+        _instancedCubeVao.bind();
 
         // Position buffer
-        GLuint posVBO, normVBO, uvVBO, ibo;
-        glGenBuffers(1, &posVBO);
-        glBindBuffer(GL_ARRAY_BUFFER, posVBO);
+        _instancedCubePosVbo.bind();
         std::vector<float> pbuf; for (auto& v : cubeData.vertices) { pbuf.push_back(v.position.x); pbuf.push_back(v.position.y); pbuf.push_back(v.position.z); }
-        glBufferData(GL_ARRAY_BUFFER, pbuf.size() * sizeof(float), pbuf.data(), GL_STATIC_DRAW);
-        glEnableVertexAttribArray(0);
-        glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+        _instancedCubePosVbo.setData(
+            static_cast<GLsizeiptr>(pbuf.size() * sizeof(float)), pbuf.data(), GL_STATIC_DRAW);
+        _instancedCubeVao.enableAttrib(0);
+        _instancedCubeVao.setAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
-        glGenBuffers(1, &normVBO);
-        glBindBuffer(GL_ARRAY_BUFFER, normVBO);
+        _instancedCubeNormVbo.bind();
         std::vector<float> nbuf; for (auto& v : cubeData.vertices) { nbuf.push_back(v.normal.x); nbuf.push_back(v.normal.y); nbuf.push_back(v.normal.z); }
-        glBufferData(GL_ARRAY_BUFFER, nbuf.size() * sizeof(float), nbuf.data(), GL_STATIC_DRAW);
-        glEnableVertexAttribArray(1);
-        glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
+        _instancedCubeNormVbo.setData(
+            static_cast<GLsizeiptr>(nbuf.size() * sizeof(float)), nbuf.data(), GL_STATIC_DRAW);
+        _instancedCubeVao.enableAttrib(1);
+        _instancedCubeVao.setAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
-        glGenBuffers(1, &uvVBO);
-        glBindBuffer(GL_ARRAY_BUFFER, uvVBO);
+        _instancedCubeUvVbo.bind();
         std::vector<float> ubuf; for (auto& v : cubeData.vertices) { ubuf.push_back(v.texCoord.x); ubuf.push_back(v.texCoord.y); }
-        glBufferData(GL_ARRAY_BUFFER, ubuf.size() * sizeof(float), ubuf.data(), GL_STATIC_DRAW);
-        glEnableVertexAttribArray(2);
-        glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
+        _instancedCubeUvVbo.setData(
+            static_cast<GLsizeiptr>(ubuf.size() * sizeof(float)), ubuf.data(), GL_STATIC_DRAW);
+        _instancedCubeVao.enableAttrib(2);
+        _instancedCubeVao.setAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
         // Index buffer
-        glGenBuffers(1, &ibo);
-        glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ibo);
-        glBufferData(GL_ELEMENT_ARRAY_BUFFER, cubeData.indices.size() * sizeof(uint32_t), cubeData.indices.data(), GL_STATIC_DRAW);
+        _instancedCubeIbo.bind();
+        _instancedCubeIbo.setData(
+            static_cast<GLsizeiptr>(cubeData.indices.size() * sizeof(uint32_t)),
+            cubeData.indices.data(),
+            GL_STATIC_DRAW);
 
         // Instance VBO
-        glGenBuffers(1, &_instanceVBO);
-        glBindBuffer(GL_ARRAY_BUFFER, _instanceVBO);
-        glEnableVertexAttribArray(3);
-        glVertexAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
-        glVertexAttribDivisor(3, 1);
+        _instanceVbo.bind();
+        _instancedCubeVao.enableAttrib(3);
+        _instancedCubeVao.setAttribPointer(3, 3, GL_FLOAT, GL_FALSE, sizeof(glm::vec3), (void*)0);
+        _instancedCubeVao.setAttribDivisor(3, 1);
 
-        glBindVertexArray(0);
+        _instancedCubeVao.unbind();
     }
 
     buildTextureAtlas();
@@ -267,11 +265,7 @@ MinecraftGame::MinecraftGame(const Options& o) : Application(o), _worldSeed(42) 
 
     // Generate mountain-water skybox textures
     std::string skyDir = o.assetRootDir + "/texture/skybox_mountain/";
-    #ifdef _WIN32
-    _mkdir(skyDir.c_str());
-    #else
-    mkdir(skyDir.c_str(), 0755);
-    #endif
+    std::filesystem::create_directories(skyDir);
     generateMountainSkybox(skyDir);
 
     _skybox = std::make_unique<SkyBox>(std::vector<std::string>{
@@ -299,10 +293,6 @@ MinecraftGame::~MinecraftGame() {
     if (_shadowMap) glDeleteTextures(1, &_shadowMap);
     if (_blockAtlas) glDeleteTextures(1, &_blockAtlas);
     if (_faceTex) glDeleteTextures(1, &_faceTex);
-    if (_faceQuadVAO) glDeleteVertexArrays(1, &_faceQuadVAO);
-    if (_faceQuadVBO) glDeleteBuffers(1, &_faceQuadVBO);
-    if (_snowVAO) glDeleteVertexArrays(1, &_snowVAO);
-    if (_snowVBO) glDeleteBuffers(1, &_snowVBO);
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -520,9 +510,11 @@ void MinecraftGame::renderShadowPass() {
     }
     if (shadowPos.empty()) { glCullFace(GL_BACK); glBindFramebuffer(GL_FRAMEBUFFER, 0); return; }
 
-    glBindBuffer(GL_ARRAY_BUFFER, _instanceVBO);
-    glBufferData(GL_ARRAY_BUFFER, shadowPos.size() * sizeof(glm::vec3),
-                 shadowPos.data(), GL_DYNAMIC_DRAW);
+    _instanceVbo.bind();
+    _instanceVbo.setData(
+        static_cast<GLsizeiptr>(shadowPos.size() * sizeof(glm::vec3)),
+        shadowPos.data(),
+        GL_DYNAMIC_DRAW);
 
     // Simple instanced shadow shader
     static std::unique_ptr<GLSLProgram> instShadowProg;
@@ -539,10 +531,9 @@ void MinecraftGame::renderShadowPass() {
     }
     instShadowProg->use();
     instShadowProg->setUniformMat4("uLS", _lightSpaceMatrix);
-    glBindVertexArray(_instancedCubeVAO);
+    _instancedCubeVao.bind();
     glDrawElementsInstanced(GL_TRIANGLES, (GLsizei)_cubeMesh->indexCount(),
                             GL_UNSIGNED_INT, 0, (GLsizei)shadowPos.size());
-    glBindVertexArray(0);
 
     glCullFace(GL_BACK);
     glDisable(GL_CULL_FACE);
@@ -994,25 +985,20 @@ void MinecraftGame::initFaceQuad() {
     };
     unsigned int quadIdx[] = {0, 1, 2, 0, 2, 3};
 
-    glGenVertexArrays(1, &_faceQuadVAO);
-    glGenBuffers(1, &_faceQuadVBO);
-    GLuint ebo;
-    glGenBuffers(1, &ebo);
-
-    glBindVertexArray(_faceQuadVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, _faceQuadVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(quadVerts), quadVerts, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(quadIdx), quadIdx, GL_STATIC_DRAW);
+    _faceQuadVao.bind();
+    _faceQuadVbo.bind();
+    _faceQuadVbo.setData(sizeof(quadVerts), quadVerts, GL_STATIC_DRAW);
+    _faceQuadIbo.bind();
+    _faceQuadIbo.setData(sizeof(quadIdx), quadIdx, GL_STATIC_DRAW);
 
     // pos
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
+    _faceQuadVao.enableAttrib(0);
+    _faceQuadVao.setAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
     // uv
-    glEnableVertexAttribArray(2);
-    glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
+    _faceQuadVao.enableAttrib(2);
+    _faceQuadVao.setAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
 
-    glBindVertexArray(0);
+    _faceQuadVao.unbind();
 
     // Simple face shader
     const char* fvs = R"(#version 330 core
@@ -1068,21 +1054,16 @@ void MinecraftGame::initSnow() {
         -w,  w, 0, 0, 1,   w,  w, 0, 1, 1,
     };
     uint32_t idx[] = {0,1,2, 2,1,3};
-    glGenVertexArrays(1, &_snowVAO);
-    glGenBuffers(1, &_snowVBO);
-    GLuint ebo;
-    glGenBuffers(1, &ebo);
-    glBindVertexArray(_snowVAO);
-    glBindBuffer(GL_ARRAY_BUFFER, _snowVBO);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(verts), verts, GL_STATIC_DRAW);
-    glBindBuffer(GL_ELEMENT_ARRAY_BUFFER, ebo);
-    glBufferData(GL_ELEMENT_ARRAY_BUFFER, sizeof(idx), idx, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
-    glEnableVertexAttribArray(1);
-    glVertexAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
-    glBindVertexArray(0);
-    glDeleteBuffers(1, &ebo);
+    _snowVao.bind();
+    _snowVbo.bind();
+    _snowVbo.setData(sizeof(verts), verts, GL_STATIC_DRAW);
+    _snowIbo.bind();
+    _snowIbo.setData(sizeof(idx), idx, GL_STATIC_DRAW);
+    _snowVao.enableAttrib(0);
+    _snowVao.setAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
+    _snowVao.enableAttrib(1);
+    _snowVao.setAttribPointer(1, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
+    _snowVao.unbind();
 
     // Snow shader — billboard particle with soft edge
     const char* svs = R"(#version 330 core
@@ -1154,7 +1135,7 @@ void MinecraftGame::drawSnow(const glm::mat4& proj, const glm::mat4& view) {
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
     glDepthMask(GL_FALSE);
 
-    glBindVertexArray(_snowVAO);
+    _snowVao.bind();
     for (auto& p : _snowParticles) {
         // Simple frustum cull – skip particles behind camera or too far
         glm::vec4 clip = vp * glm::vec4(p.pos, 1.0f);
@@ -1168,7 +1149,6 @@ void MinecraftGame::drawSnow(const glm::mat4& proj, const glm::mat4& view) {
         glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
     }
 
-    glBindVertexArray(0);
     glDepthMask(GL_TRUE);
     glDisable(GL_BLEND);
 }
@@ -1199,11 +1179,11 @@ void MinecraftGame::handleInput() {
     // ---- P: place OBJ ----
     { static bool w=false; bool n=(_input.keyboard.keyStates[GLFW_KEY_P]!=GLFW_RELEASE); if(n&&!w&&_ghostPlaceValid&&!ImGui::GetIO().WantCaptureKeyboard){if(!_objFiles.empty()&&_objFiles[_selectedObj]!="(none)"){try{auto el=ObjLoader::Load("media/obj/"+_objFiles[_selectedObj]);PlacedObj po;po.mesh=std::make_unique<Mesh>(el.vertices,el.indices);po.name=_objFiles[_selectedObj];_placedObjs[_ghostPlace]=std::move(po);}catch(...){}}} w=n; }
     // ---- X: export OBJs ----
-    { static bool w=false; bool n=(_input.keyboard.keyStates[GLFW_KEY_X]!=GLFW_RELEASE); if(n&&!w&&!ImGui::GetIO().WantCaptureKeyboard){Element all;for(auto&kv:_placedObjs){auto&po=kv.second;if(!po.mesh)continue;auto&sv=po.mesh->vertices();auto&si=po.mesh->indices();glm::vec3 off=glm::vec3(kv.first)+glm::vec3(0,1,0);uint32_t base=(uint32_t)all.vertices.size();for(auto&v:sv){auto v2=v;v2.position=v.position*po.scale+off;all.vertices.push_back(v2);}for(auto idx:si)all.indices.push_back(base+idx);}if(!all.vertices.empty()){_mkdir("media/obj");time_t now=time(nullptr);char fn[128];snprintf(fn,sizeof(fn),"media/obj/export_%lld.obj",(long long)now);ObjLoader::Save(fn,all);_screenshotFlash=1.5f;}} w=n; }
+    { static bool w=false; bool n=(_input.keyboard.keyStates[GLFW_KEY_X]!=GLFW_RELEASE); if(n&&!w&&!ImGui::GetIO().WantCaptureKeyboard){Element all;for(auto&kv:_placedObjs){auto&po=kv.second;if(!po.mesh)continue;auto&sv=po.mesh->vertices();auto&si=po.mesh->indices();glm::vec3 off=glm::vec3(kv.first)+glm::vec3(0,1,0);uint32_t base=(uint32_t)all.vertices.size();for(auto&v:sv){auto v2=v;v2.position=v.position*po.scale+off;all.vertices.push_back(v2);}for(auto idx:si)all.indices.push_back(base+idx);}if(!all.vertices.empty()){std::filesystem::create_directories("media/obj");time_t now=time(nullptr);char fn[128];snprintf(fn,sizeof(fn),"media/obj/export_%lld.obj",(long long)now);ObjLoader::Save(fn,all);_screenshotFlash=1.5f;}} w=n; }
     static bool f2WasDown = false;
     bool f2Now = (_input.keyboard.keyStates[GLFW_KEY_F2] != GLFW_RELEASE);
     if (f2Now && !f2WasDown) {
-        _mkdir("screenshots");
+        std::filesystem::create_directories("screenshots");
         std::vector<uint8_t> pixels(_windowWidth * _windowHeight * 3);
         glReadPixels(0, 0, _windowWidth, _windowHeight, GL_RGB, GL_UNSIGNED_BYTE, pixels.data());
         // Flip vertically (OpenGL bottom-left vs PNG top-left)
@@ -1755,12 +1735,14 @@ void MinecraftGame::drawBlocks(const glm::mat4& proj, const glm::mat4& view) {
         if (bt == BT_WATER || bt == BT_LEAVES || bt == BT_GLASS || bt == BT_GLOWSTONE || bt == BT_SNOW) continue;
         if (posBuf[bt].empty()) continue;
 
-        glBindBuffer(GL_ARRAY_BUFFER, _instanceVBO);
-        glBufferData(GL_ARRAY_BUFFER, posBuf[bt].size() * sizeof(glm::vec3),
-                     posBuf[bt].data(), GL_DYNAMIC_DRAW);
+        _instanceVbo.bind();
+        _instanceVbo.setData(
+            static_cast<GLsizeiptr>(posBuf[bt].size() * sizeof(glm::vec3)),
+            posBuf[bt].data(),
+            GL_DYNAMIC_DRAW);
 
         int baseTile = (bt - 1) * 3;
-        drawTexturedLitInstanced(_instTexLitShader, _instancedCubeVAO,
+        drawTexturedLitInstanced(_instTexLitShader, _instancedCubeVao,
             indexCount, (int)posBuf[bt].size(), baseTile,
             (float)ATLAS_COLS, _blockAtlas, proj, view, pp);
     }
@@ -1773,12 +1755,14 @@ void MinecraftGame::drawBlocks(const glm::mat4& proj, const glm::mat4& view) {
         int bt = transTypes[ti];
         if (posBuf[bt].empty()) continue;
 
-        glBindBuffer(GL_ARRAY_BUFFER, _instanceVBO);
-        glBufferData(GL_ARRAY_BUFFER, posBuf[bt].size() * sizeof(glm::vec3),
-                     posBuf[bt].data(), GL_DYNAMIC_DRAW);
+        _instanceVbo.bind();
+        _instanceVbo.setData(
+            static_cast<GLsizeiptr>(posBuf[bt].size() * sizeof(glm::vec3)),
+            posBuf[bt].data(),
+            GL_DYNAMIC_DRAW);
 
         int baseTile = (bt - 1) * 3;
-        drawTexturedLitInstanced(_instTexLitShader, _instancedCubeVAO,
+        drawTexturedLitInstanced(_instTexLitShader, _instancedCubeVao,
             indexCount, (int)posBuf[bt].size(), baseTile,
             (float)ATLAS_COLS, _blockAtlas, proj, view, pp);
     }
@@ -1865,7 +1849,7 @@ void MinecraftGame::drawCharacter(const glm::mat4& proj, const glm::mat4& view) 
     drawPart(_builder.legR_lower, glm::vec3(0.18f, 0.25f, 0.45f));
 
     // === Steve face texture overlay ===
-    if (_faceQuadVAO && _faceTex && _faceShader) {
+    if (_faceQuadVao.getHandle() != 0 && _faceTex && _faceShader) {
         const auto& mats = _builder.skeleton().finalMatrices();
         int headBone = HumanoidBuilder::HEAD;
         if (headBone < (int)mats.size()) {
@@ -1884,9 +1868,8 @@ void MinecraftGame::drawCharacter(const glm::mat4& proj, const glm::mat4& view) 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, _faceTex);
             _faceShader->setUniformInt("uTex", 0);
-            glBindVertexArray(_faceQuadVAO);
+            _faceQuadVao.bind();
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
-            glBindVertexArray(0);
             glDepthFunc(GL_LESS);
             glDisable(GL_BLEND);
         }
@@ -2159,7 +2142,7 @@ void MinecraftGame::drawInventory() {
             for(auto& v:cube.vertices){auto v2=v;v2.position+=off;allBlocks.vertices.push_back(v2);}
             for(auto idx:cube.indices)allBlocks.indices.push_back(base+idx);
         }
-        if(!allBlocks.vertices.empty()){_mkdir("media/obj");ObjLoader::Save("media/obj/exported_scene.obj",allBlocks);_screenshotFlash=1.5f;}
+        if(!allBlocks.vertices.empty()){std::filesystem::create_directories("media/obj");ObjLoader::Save("media/obj/exported_scene.obj",allBlocks);_screenshotFlash=1.5f;}
     }
 
 ImGui::End();

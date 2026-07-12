@@ -3,17 +3,18 @@
 #include <vector>
 #include <cstdint>
 #include <glm/glm.hpp>
-#include "../base/gl_utility.h"
+#include "../base/buffer.h"
 #include "../base/vertex.h"
+#include "../base/vertex_array.h"
 
 class Mesh {
 public:
     Mesh() = default;
     Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices);
-    ~Mesh();
+    ~Mesh() = default;
 
-    Mesh(Mesh&& other) noexcept;
-    Mesh& operator=(Mesh&& other) noexcept;
+    Mesh(Mesh&& other) noexcept = default;
+    Mesh& operator=(Mesh&& other) noexcept = default;
     Mesh(const Mesh&) = delete;
     Mesh& operator=(const Mesh&) = delete;
 
@@ -21,11 +22,13 @@ public:
     const std::vector<Vertex>& vertices() const { return _vertices; }
     const std::vector<uint32_t>& indices() const { return _indices; }
     uint32_t indexCount() const { return _indexCount; }
-    GLuint vao() const { return _vao; }
+    const VertexArray& vao() const { return _vao; }
 
 private:
     std::vector<Vertex> _vertices;
     std::vector<uint32_t> _indices;
-    GLuint _vao = 0, _vbo = 0, _ebo = 0;
+    VertexArray _vao;
+    VertexBuffer _vbo;
+    IndexBuffer _ebo;
     uint32_t _indexCount = 0;
 };

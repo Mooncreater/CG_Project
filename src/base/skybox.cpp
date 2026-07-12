@@ -19,14 +19,12 @@ SkyBox::SkyBox(const std::vector<std::string>& textureFilenames) {
                           -1.0f, -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, -1.0f,
                           1.0f,  -1.0f, -1.0f, -1.0f, -1.0f, 1.0f,  1.0f,  -1.0f, 1.0f};
 
-    glGenVertexArrays(1, &_vao);
-    glGenBuffers(1, &_vbo);
-    glBindVertexArray(_vao);
-    glBindBuffer(GL_ARRAY_BUFFER, _vbo);
-    glBufferData(GL_ARRAY_BUFFER, sizeof(vertices), &vertices, GL_STATIC_DRAW);
-    glEnableVertexAttribArray(0);
-    glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
-    glBindVertexArray(0);
+    _vao.bind();
+    _vbo.bind();
+    _vbo.setData(sizeof(vertices), vertices, GL_STATIC_DRAW);
+    _vao.enableAttrib(0);
+    _vao.setAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), 0);
+    _vao.unbind();
 
     try {
         _texture.reset(new ImageTextureCubemap(textureFilenames));
@@ -57,19 +55,9 @@ SkyBox::SkyBox(const std::vector<std::string>& textureFilenames) {
         _shader->attachFragmentShader(fsCode);
         _shader->link();
     } catch (const std::exception&) {
-        cleanup();
         throw;
     }
 }
-
-SkyBox::SkyBox(SkyBox&& rhs) noexcept
-    : _vao(rhs._vao), _vbo(rhs._vbo), _texture(std::move(rhs._texture)),
-      _shader(std::move(rhs._shader)) {
-    rhs._vao = 0;
-    rhs._vbo = 0;
-}
-
-SkyBox::~SkyBox() { cleanup(); }
 
 void SkyBox::draw(const glm::mat4& projection, const glm::mat4& view) {
     glDepthFunc(GL_LEQUAL);
@@ -79,12 +67,7 @@ void SkyBox::draw(const glm::mat4& projection, const glm::mat4& view) {
     glm::mat4 viewNoTrans = glm::mat4(glm::mat3(view));
     _shader->setUniformMat4("view", viewNoTrans);
     _texture->bind(0);
-    glBindVertexArray(_vao);
+    _vao.bind();
     glDrawArrays(GL_TRIANGLES, 0, 36);
     glDepthFunc(GL_LESS);
-}
-
-void SkyBox::cleanup() {
-    if (_vbo != 0) { glDeleteBuffers(1, &_vbo); _vbo = 0; }
-    if (_vao != 0) { glDeleteVertexArrays(1, &_vao); _vao = 0; }
 }

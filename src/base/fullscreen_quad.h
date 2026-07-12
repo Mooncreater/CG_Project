@@ -2,8 +2,10 @@
 
 #include <glm/glm.hpp>
 
+#include "buffer.h"
 #include "gl_utility.h"
 #include "texture.h"
+#include "vertex_array.h"
 
 class FullscreenQuad {
 public:
@@ -11,13 +13,13 @@ public:
 
     FullscreenQuad(const FullscreenQuad&) = delete;
 
-    FullscreenQuad(FullscreenQuad&& rhs) noexcept;
+    FullscreenQuad(FullscreenQuad&& rhs) noexcept = default;
 
-    ~FullscreenQuad();
+    ~FullscreenQuad() = default;
 
     void draw() const;
 
 private:
-    GLuint _vao;
-    GLuint _vbo;
+    VertexArray _vao;
+    VertexBuffer _vbo;
 };

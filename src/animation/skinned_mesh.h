@@ -2,7 +2,8 @@
 #include <vector>
 #include <cstdint>
 #include <glm/glm.hpp>
-#include <glad/gl.h>
+#include "../base/buffer.h"
+#include "../base/vertex_array.h"
 
 // Vertex with skinning data: 4 bone indices + 4 weights
 struct SkinnedVertex {
@@ -21,10 +22,10 @@ public:
     SkinnedMesh() = default;
     SkinnedMesh(const std::vector<SkinnedVertex>& vertices,
                 const std::vector<uint32_t>& indices);
-    ~SkinnedMesh();
+    ~SkinnedMesh() = default;
 
-    SkinnedMesh(SkinnedMesh&& o) noexcept;
-    SkinnedMesh& operator=(SkinnedMesh&& o) noexcept;
+    SkinnedMesh(SkinnedMesh&& o) noexcept = default;
+    SkinnedMesh& operator=(SkinnedMesh&& o) noexcept = default;
     SkinnedMesh(const SkinnedMesh&) = delete;
     SkinnedMesh& operator=(const SkinnedMesh&) = delete;
 
@@ -33,6 +34,8 @@ public:
     uint32_t indexCount() const { return _indexCount; }
 
 private:
-    GLuint _vao = 0, _vbo = 0, _ebo = 0;
+    VertexArray _vao;
+    VertexBuffer _vbo;
+    IndexBuffer _ebo;
     uint32_t _indexCount = 0;
 };

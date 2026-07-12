@@ -65,4 +65,4 @@ struct Demo : Application {
     }
 };
 
-int main(){Options o;o.windowTitle="09 Bone Test";o.windowWidth=1024;o.windowHeight=768;o.glVersion={3,3};Demo app(o);app.run();return 0;}
+int main(){Options o;o.windowTitle="09 Bone Test";o.assetRootDir="media";o.windowWidth=1024;o.windowHeight=768;o.glVersion={3,3};Demo app(o);app.run();return 0;}

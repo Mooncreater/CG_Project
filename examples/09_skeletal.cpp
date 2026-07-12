@@ -4,7 +4,7 @@
 int main() {
     Options o;
     o.windowTitle  = "Minecraft Style";
-    o.assetRootDir = "D:/.zju/Professional_courses/CG/final/media";
+    o.assetRootDir = "media";
     o.windowWidth  = 1280;
     o.windowHeight = 800;
     o.glVersion    = {3, 3};

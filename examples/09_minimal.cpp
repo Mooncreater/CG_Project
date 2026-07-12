@@ -29,4 +29,4 @@ struct Demo : Application {
         drawLit(_shader,_mesh.get(),glm::mat4(1),glm::vec3(0.8f,0.3f,0.3f),P,_fc.viewMatrix());
     }
 };
-int main(){Options o;o.windowTitle="09 Minimal";o.windowWidth=1024;o.windowHeight=768;o.glVersion={3,3};Demo app(o);app.run();return 0;}
+int main(){Options o;o.windowTitle="09 Minimal";o.assetRootDir="media";o.windowWidth=1024;o.windowHeight=768;o.glVersion={3,3};Demo app(o);app.run();return 0;}
