@@ -3,8 +3,10 @@
 #include <stdexcept>
 
 void Skeleton::addBone(const std::string& name, int parent, const glm::mat4& offset) {
-    if (parent >= (int)_bones.size() && parent != -1)
+    if (parent >= (int)_bones.size() && parent != -1) {
         throw std::runtime_error("Skeleton::addBone: invalid parent");
+    }
+
     Bone b;
     b.name = name;
     b.parentIndex = parent;

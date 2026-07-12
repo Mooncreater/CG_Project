@@ -8,7 +8,7 @@ int main() {
     o.windowWidth  = 1280;
     o.windowHeight = 800;
     o.glVersion    = {3, 3};
+
     MinecraftGame app(o);
     app.run();
-    return 0;
 }

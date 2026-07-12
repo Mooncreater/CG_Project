@@ -1,8 +1,7 @@
 #include "mesh.h"
 
-Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices) : _vertices(vertices), _indices(indices) {
-    _indexCount = static_cast<uint32_t>(indices.size());
-
+Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& indices)
+    : _vertices(vertices), _indices(indices) {
     _vao.bind();
     _vbo.bind();
     _vbo.setData(
@@ -26,5 +25,5 @@ Mesh::Mesh(const std::vector<Vertex>& vertices, const std::vector<uint32_t>& ind
 
 void Mesh::draw() const {
     _vao.bind();
-    glDrawElements(GL_TRIANGLES, _indexCount, GL_UNSIGNED_INT, 0);
+    glDrawElements(GL_TRIANGLES, (GLsizei)_indices.size(), GL_UNSIGNED_INT, 0);
 }

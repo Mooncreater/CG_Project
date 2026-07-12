@@ -46,16 +46,18 @@ Element ObjLoader::Load(const std::string& filepath) {
             std::vector<FaceIdx> face;
             std::string token;
             while (ss >> token) {
-                FaceIdx fv = {0, 0, 0};
+                FaceIdx fv = { 0, 0, 0 };
                 size_t s1 = token.find('/');
                 if (s1 == std::string::npos) {
                     fv.p = std::stoi(token);
-                } else {
+                }
+                else {
                     fv.p = std::stoi(token.substr(0, s1));
                     size_t s2 = token.find('/', s1 + 1);
                     if (s2 == std::string::npos) {
                         fv.t = std::stoi(token.substr(s1 + 1));
-                    } else {
+                    }
+                    else {
                         if (s2 > s1 + 1)
                             fv.t = std::stoi(token.substr(s1 + 1, s2 - s1 - 1));
                         fv.n = std::stoi(token.substr(s2 + 1));
@@ -95,10 +97,25 @@ Element ObjLoader::Load(const std::string& filepath) {
 
 void ObjLoader::Save(const std::string& filepath, const Element& element, const glm::mat4& transform) {
     std::ofstream file(filepath);
-    if (!file.is_open()) throw std::runtime_error("Cannot open for writing: " + filepath);
+    if (!file.is_open()) {
+        throw std::runtime_error("Cannot open for writing: " + filepath);
+    }
+
     file << "# OBJ exported\n";
-    for (auto& v : element.vertices) { auto p=transform*glm::vec4(v.position,1); file<<"v "<<p.x<<" "<<p.y<<" "<<p.z<<"\n"; }
-    for (auto& v : element.vertices) { auto n=glm::mat3(transform)*v.normal; file<<"vn "<<n.x<<" "<<n.y<<" "<<n.z<<"\n"; }
-    for (auto& v : element.vertices) file<<"vt "<<v.texCoord.x<<" "<<v.texCoord.y<<"\n";
-    for (size_t i=0;i<element.indices.size();i+=3) { auto a=element.indices[i]+1,b=element.indices[i+1]+1,c=element.indices[i+2]+1; file<<"f "<<a<<"/"<<a<<"/"<<a<<" "<<b<<"/"<<b<<"/"<<b<<" "<<c<<"/"<<c<<"/"<<c<<"\n"; }
+    for (auto& v : element.vertices) {
+        auto p = transform * glm::vec4(v.position, 1); file << "v " << p.x << " " << p.y << " " << p.z << "\n";
+    }
+
+    for (auto& v : element.vertices) {
+        auto n = glm::mat3(transform) * v.normal; file << "vn " << n.x << " " << n.y << " " << n.z << "\n";
+    }
+
+    for (auto& v : element.vertices) {
+        file << "vt " << v.texCoord.x << " " << v.texCoord.y << "\n";
+    }
+
+    for (size_t i = 0; i < element.indices.size(); i += 3) {
+        auto a = element.indices[i] + 1, b = element.indices[i + 1] + 1, c = element.indices[i + 2] + 1; 
+        file << "f " << a << "/" << a << "/" << a << " " << b << "/" << b << "/" << b << " " << c << "/" << c << "/" << c << "\n";
+    }
 }

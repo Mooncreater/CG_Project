@@ -21,7 +21,7 @@ public:
     void draw() const;
     const std::vector<Vertex>& vertices() const { return _vertices; }
     const std::vector<uint32_t>& indices() const { return _indices; }
-    uint32_t indexCount() const { return _indexCount; }
+    uint32_t indexCount() const { return (uint32_t)_indices.size(); }
     const VertexArray& vao() const { return _vao; }
 
 private:
@@ -30,5 +30,4 @@ private:
     VertexArray _vao;
     VertexBuffer _vbo;
     IndexBuffer _ebo;
-    uint32_t _indexCount = 0;
 };

@@ -10,7 +10,9 @@
 #include <memory>
 
 class TexturedLitShader {
+private:
     std::unique_ptr<GLSLProgram> _prog;
+
 public:
     TexturedLitShader() {
         const char* vs = R"(#version 330 core

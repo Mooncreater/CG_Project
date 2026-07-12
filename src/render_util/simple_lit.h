@@ -94,31 +94,31 @@ public:
 // Draw helpers — full Phong + shadow params
 // ============================================================
 struct PhongParams {
-    glm::vec3 sunDir       = glm::normalize(glm::vec3(0.5f, 1.0f, 0.3f));
-    glm::vec3 sunColor     = glm::vec3(1.0f, 0.95f, 0.85f);
-    glm::vec3 ambient      = glm::vec3(0.3f);
-    glm::vec3 specColor    = glm::vec3(1.0f);
-    float     shininess    = 32.0f;
-    glm::vec3 camPos       = glm::vec3(0, 5, 20);
-    glm::vec3 ptPos        = glm::vec3(3, 4, -2);
-    glm::vec3 ptColor      = glm::vec3(0.3f, 0.5f, 1.0f);
-    float     ptIntensity  = 5.0f;
+    glm::vec3 sunDir = glm::normalize(glm::vec3(0.5f, 1.0f, 0.3f));
+    glm::vec3 sunColor = glm::vec3(1.0f, 0.95f, 0.85f);
+    glm::vec3 ambient = glm::vec3(0.3f);
+    glm::vec3 specColor = glm::vec3(1.0f);
+    float     shininess = 32.0f;
+    glm::vec3 camPos = glm::vec3(0, 5, 20);
+    glm::vec3 ptPos = glm::vec3(3, 4, -2);
+    glm::vec3 ptColor = glm::vec3(0.3f, 0.5f, 1.0f);
+    float     ptIntensity = 5.0f;
     float     ptAttenConst = 1.0f;
     float     ptAttenLinear = 0.09f;
-    float     ptAttenQuad  = 0.032f;
-    glm::mat4 lightSpace   = glm::mat4(1.0f);
-    GLuint    shadowMap    = 0;
-    float     shadowBias   = 0.0005f;
-    bool      shadowsOn    = true;
+    float     ptAttenQuad = 0.032f;
+    glm::mat4 lightSpace = glm::mat4(1.0f);
+    GLuint    shadowMap = 0;
+    float     shadowBias = 0.0005f;
+    bool      shadowsOn = true;
 };
 
 inline void drawLit(SimpleLitShader& shader,
-                     Mesh* mesh,
-                     const glm::mat4& model,
-                     const glm::vec3& color,
-                     const glm::mat4& proj,
-                     const glm::mat4& view,
-                     const PhongParams& pp = PhongParams())
+    Mesh* mesh,
+    const glm::mat4& model,
+    const glm::vec3& color,
+    const glm::mat4& proj,
+    const glm::mat4& view,
+    const PhongParams& pp = PhongParams())
 {
     shader->use();
     shader->setUniformMat4("uP", proj);
@@ -145,19 +145,20 @@ inline void drawLit(SimpleLitShader& shader,
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, pp.shadowMap);
         shader->setUniformInt("uShadowMap", 1);
-    } else {
+    }
+    else {
         shader->setUniformInt("uShadowMap", 0);
     }
     mesh->draw();
 }
 
 inline void drawLit(SimpleLitShader& shader,
-                     Mesh* mesh,
-                     const glm::mat4& model,
-                     const glm::vec4& color,
-                     const glm::mat4& proj,
-                     const glm::mat4& view,
-                     const PhongParams& pp = PhongParams())
+    Mesh* mesh,
+    const glm::mat4& model,
+    const glm::vec4& color,
+    const glm::mat4& proj,
+    const glm::mat4& view,
+    const PhongParams& pp = PhongParams())
 {
     shader->use();
     shader->setUniformMat4("uP", proj);
@@ -183,7 +184,8 @@ inline void drawLit(SimpleLitShader& shader,
         glActiveTexture(GL_TEXTURE1);
         glBindTexture(GL_TEXTURE_2D, pp.shadowMap);
         shader->setUniformInt("uShadowMap", 1);
-    } else {
+    }
+    else {
         shader->setUniformInt("uShadowMap", 0);
     }
     shader->setUniformFloat("uAlpha", color.a);

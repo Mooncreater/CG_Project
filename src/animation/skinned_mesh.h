@@ -7,13 +7,11 @@
 
 // Vertex with skinning data: 4 bone indices + 4 weights
 struct SkinnedVertex {
-    glm::vec3 position{0};
-    glm::vec3 normal{0,1,0};
-    glm::vec2 texCoord{0};
-    int boneIds[4] = {0,0,0,0};
-    float weights[4] = {1,0,0,0};
-
-    SkinnedVertex() = default;
+    glm::vec3 position{ 0 };
+    glm::vec3 normal{ 0, 1, 0 };
+    glm::vec2 texCoord{ 0 };
+    int boneIds[4] = { 0, 0, 0, 0 };
+    float weights[4] = { 1, 0, 0, 0 };
 };
 
 // GPU mesh that supports skeletal animation
@@ -21,7 +19,7 @@ class SkinnedMesh {
 public:
     SkinnedMesh() = default;
     SkinnedMesh(const std::vector<SkinnedVertex>& vertices,
-                const std::vector<uint32_t>& indices);
+        const std::vector<uint32_t>& indices);
     ~SkinnedMesh() = default;
 
     SkinnedMesh(SkinnedMesh&& o) noexcept = default;

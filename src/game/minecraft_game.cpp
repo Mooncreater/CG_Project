@@ -61,7 +61,7 @@ static void generateMountainSkybox(const std::string& dir) {
         h = ((h >> 16) ^ h) * 0x45d9f3b;
         h = (h >> 16) ^ h;
         return (float)(h % 10000) / 10000.0f;
-    };
+        };
 
     auto snoise = [&](float x, float y, int seed) -> float {
         int ix = (int)floorf(x), iy = (int)floorf(y);
@@ -71,7 +71,7 @@ static void generateMountainSkybox(const std::string& dir) {
         float a = rhash(ix, iy, seed), b = rhash(ix + 1, iy, seed);
         float c = rhash(ix, iy + 1, seed), d = rhash(ix + 1, iy + 1, seed);
         return (a * (1 - u) + b * u) * (1 - v) + (c * (1 - u) + d * u) * v;
-    };
+        };
 
     // Multi-octave mountain height
     auto mtnH = [&](float u, int seed) -> float {
@@ -80,9 +80,9 @@ static void generateMountainSkybox(const std::string& dir) {
         h += snoise(u * 13.0f, 0.7f, seed + 200) * 0.12f;
         h += snoise(u * 25.0f, 0.4f, seed + 300) * 0.05f;
         return h * 0.6f + 0.12f;
-    };
+        };
 
-    const char* fnames[6] = {"Right_Tex","Left_Tex","Up_Tex","Down_Tex","Front_Tex","Back_Tex"};
+    const char* fnames[6] = { "Right_Tex","Left_Tex","Up_Tex","Down_Tex","Front_Tex","Back_Tex" };
 
     for (int face = 0; face < 6; face++) {
         for (int y = 0; y < SZ; y++) {
@@ -94,27 +94,27 @@ static void generateMountainSkybox(const std::string& dir) {
                 if (face == 2) {
                     // UP: Deep blue sky + scattered clouds
                     float skyB = 0.35f + v * 0.45f;
-                    float cloud = snoise(u*7.0f, v*5.0f, 500)*0.5f + snoise(u*3.5f, v*2.5f, 600)*0.35f;
-                    float cld = cloud > 0.55f ? (cloud-0.55f)/0.45f : 0.0f;
-                    r = (uint8_t)(70 + (int)(skyB*120 + cld*65));
-                    g = (uint8_t)(120 + (int)(skyB*100 + cld*35));
-                    b = (uint8_t)(180 + (int)(skyB*75));
+                    float cloud = snoise(u * 7.0f, v * 5.0f, 500) * 0.5f + snoise(u * 3.5f, v * 2.5f, 600) * 0.35f;
+                    float cld = cloud > 0.55f ? (cloud - 0.55f) / 0.45f : 0.0f;
+                    r = (uint8_t)(70 + (int)(skyB * 120 + cld * 65));
+                    g = (uint8_t)(120 + (int)(skyB * 100 + cld * 35));
+                    b = (uint8_t)(180 + (int)(skyB * 75));
                 }
                 else if (face == 3) {
                     // DOWN: Dark lake bottom
-                    float ripple = snoise(u*14.0f, v*14.0f, 700)*0.08f;
-                    r = (uint8_t)(8 + (int)(ripple*20));
-                    g = (uint8_t)(18 + (int)(ripple*30));
-                    b = (uint8_t)(45 + (int)(ripple*40));
+                    float ripple = snoise(u * 14.0f, v * 14.0f, 700) * 0.08f;
+                    r = (uint8_t)(8 + (int)(ripple * 20));
+                    g = (uint8_t)(18 + (int)(ripple * 30));
+                    b = (uint8_t)(45 + (int)(ripple * 40));
                 }
                 else {
                     // HORIZONTAL faces
                     float sunGlow = 0;
-                    if (face == 0) sunGlow = expf(-((u-0.75f)*(u-0.75f)+(v-0.55f)*(v-0.55f))*8.0f)*0.3f;
+                    if (face == 0) sunGlow = expf(-((u - 0.75f) * (u - 0.75f) + (v - 0.55f) * (v - 0.55f)) * 8.0f) * 0.3f;
 
                     float horizon = 0.08f;
                     float mtBase = 0.05f;
-                    float mh = mtnH(u, face*1000+42);
+                    float mh = mtnH(u, face * 1000 + 42);
                     float mtTop = mtBase + mh;
 
                     if (v > horizon + 0.03f) {
@@ -122,55 +122,55 @@ static void generateMountainSkybox(const std::string& dir) {
                         float t = (v - horizon - 0.03f) / (0.97f - horizon);
                         float skyB = 0.25f + t * 0.45f;
                         float haze = (1.0f - t) * (1.0f - t) * 0.15f;
-                        float cloud = snoise(u*5.0f, v*3.5f, 800)*0.35f + snoise(u*2.5f, v*1.8f, 900)*0.25f;
-                        r = (uint8_t)(60 + (int)((skyB + cloud*0.5f) * 170 + sunGlow*255));
-                        g = (uint8_t)(110 + (int)((skyB + cloud*0.4f + haze) * 120 + sunGlow*200));
-                        b = (uint8_t)(170 + (int)((skyB + cloud*0.3f + haze) * 85));
+                        float cloud = snoise(u * 5.0f, v * 3.5f, 800) * 0.35f + snoise(u * 2.5f, v * 1.8f, 900) * 0.25f;
+                        r = (uint8_t)(60 + (int)((skyB + cloud * 0.5f) * 170 + sunGlow * 255));
+                        g = (uint8_t)(110 + (int)((skyB + cloud * 0.4f + haze) * 120 + sunGlow * 200));
+                        b = (uint8_t)(170 + (int)((skyB + cloud * 0.3f + haze) * 85));
                     }
                     else if (v > mtTop) {
                         // === SKY BELOW HORIZON (distant atmosphere) ===
                         float t = (v - mtTop) / (horizon + 0.03f - mtTop + 0.001f);
                         float haze = (1.0f - t) * 0.4f;
-                        r = (uint8_t)(140 + (int)(haze*60 + sunGlow*200));
-                        g = (uint8_t)(150 + (int)(haze*60 + sunGlow*100));
-                        b = (uint8_t)(160 + (int)(haze*80));
+                        r = (uint8_t)(140 + (int)(haze * 60 + sunGlow * 200));
+                        g = (uint8_t)(150 + (int)(haze * 60 + sunGlow * 100));
+                        b = (uint8_t)(160 + (int)(haze * 80));
                     }
                     else if (v > mtBase) {
                         // === MOUNTAIN ===
                         float t = (v - mtBase) / (mtTop - mtBase + 0.001f);
                         if (t > 0.78f) {
                             // Snow cap
-                            float snow = snoise(u*12.0f, t*8.0f, 42)*0.25f;
-                            r = (uint8_t)(225 + (int)(snow*30));
-                            g = (uint8_t)(230 + (int)(snow*25));
-                            b = (uint8_t)(235 + (int)(snow*20));
+                            float snow = snoise(u * 12.0f, t * 8.0f, 42) * 0.25f;
+                            r = (uint8_t)(225 + (int)(snow * 30));
+                            g = (uint8_t)(230 + (int)(snow * 25));
+                            b = (uint8_t)(235 + (int)(snow * 20));
                         }
                         else if (t > 0.4f) {
                             // Rocky mid-section
-                            float rock = snoise(u*10.0f, t*7.0f, 45)*0.35f;
-                            r = (uint8_t)(55 + (int)(rock*45));
-                            g = (uint8_t)(50 + (int)(rock*38));
-                            b = (uint8_t)(40 + (int)(rock*30));
+                            float rock = snoise(u * 10.0f, t * 7.0f, 45) * 0.35f;
+                            r = (uint8_t)(55 + (int)(rock * 45));
+                            g = (uint8_t)(50 + (int)(rock * 38));
+                            b = (uint8_t)(40 + (int)(rock * 30));
                         }
                         else {
                             // Green vegetation base
-                            float veg = snoise(u*9.0f, t*6.0f, 48)*0.25f;
-                            r = (uint8_t)(30 + (int)(veg*20));
-                            g = (uint8_t)(60 + (int)(veg*40));
-                            b = (uint8_t)(20 + (int)(veg*15));
+                            float veg = snoise(u * 9.0f, t * 6.0f, 48) * 0.25f;
+                            r = (uint8_t)(30 + (int)(veg * 20));
+                            g = (uint8_t)(60 + (int)(veg * 40));
+                            b = (uint8_t)(20 + (int)(veg * 15));
                         }
                     }
                     else {
                         // === WATER ===
-                        float ripple = snoise(u*18.0f, v*22.0f, 701)*0.10f
-                                     + snoise(u*10.0f, v*10.0f, 702)*0.06f;
+                        float ripple = snoise(u * 18.0f, v * 22.0f, 701) * 0.10f
+                            + snoise(u * 10.0f, v * 10.0f, 702) * 0.06f;
                         float depth = 1.0f - (mtBase - v) * 1.5f;
                         if (depth < 0.2f) depth = 0.2f;
                         // Reflect sky color in water
                         float refl = 0.5f;
-                        r = (uint8_t)((20 + ripple*40)*depth + (70*sunGlow)*refl);
-                        g = (uint8_t)((45 + ripple*70)*depth + (120*sunGlow)*refl);
-                        b = (uint8_t)((100 + ripple*100)*depth + (170*sunGlow)*refl);
+                        r = (uint8_t)((20 + ripple * 40) * depth + (70 * sunGlow) * refl);
+                        g = (uint8_t)((45 + ripple * 70) * depth + (120 * sunGlow) * refl);
+                        b = (uint8_t)((100 + ripple * 100) * depth + (170 * sunGlow) * refl);
                     }
                 }
 
@@ -178,7 +178,7 @@ static void generateMountainSkybox(const std::string& dir) {
                 g = (uint8_t)std::min(255, std::max(0, (int)g));
                 b = (uint8_t)std::min(255, std::max(0, (int)b));
                 int idx = (y * SZ + x) * 3;
-                pixels[idx+0] = r; pixels[idx+1] = g; pixels[idx+2] = b;
+                pixels[idx + 0] = r; pixels[idx + 1] = g; pixels[idx + 2] = b;
             }
         }
         std::string path = dir + "/" + fnames[face] + ".jpg";
@@ -207,21 +207,35 @@ MinecraftGame::MinecraftGame(const Options& o) : Application(o), _worldSeed(42) 
 
         // Position buffer
         _instancedCubePosVbo.bind();
-        std::vector<float> pbuf; for (auto& v : cubeData.vertices) { pbuf.push_back(v.position.x); pbuf.push_back(v.position.y); pbuf.push_back(v.position.z); }
+        std::vector<float> pbuf;
+        for (auto& v : cubeData.vertices) {
+            pbuf.push_back(v.position.x);
+            pbuf.push_back(v.position.y);
+            pbuf.push_back(v.position.z);
+        }
         _instancedCubePosVbo.setData(
             static_cast<GLsizeiptr>(pbuf.size() * sizeof(float)), pbuf.data(), GL_STATIC_DRAW);
         _instancedCubeVao.enableAttrib(0);
         _instancedCubeVao.setAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
         _instancedCubeNormVbo.bind();
-        std::vector<float> nbuf; for (auto& v : cubeData.vertices) { nbuf.push_back(v.normal.x); nbuf.push_back(v.normal.y); nbuf.push_back(v.normal.z); }
+        std::vector<float> nbuf;
+        for (auto& v : cubeData.vertices) {
+            nbuf.push_back(v.normal.x);
+            nbuf.push_back(v.normal.y);
+            nbuf.push_back(v.normal.z);
+        }
         _instancedCubeNormVbo.setData(
             static_cast<GLsizeiptr>(nbuf.size() * sizeof(float)), nbuf.data(), GL_STATIC_DRAW);
         _instancedCubeVao.enableAttrib(1);
         _instancedCubeVao.setAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, (void*)0);
 
         _instancedCubeUvVbo.bind();
-        std::vector<float> ubuf; for (auto& v : cubeData.vertices) { ubuf.push_back(v.texCoord.x); ubuf.push_back(v.texCoord.y); }
+        std::vector<float> ubuf;
+        for (auto& v : cubeData.vertices) {
+            ubuf.push_back(v.texCoord.x);
+            ubuf.push_back(v.texCoord.y);
+        }
         _instancedCubeUvVbo.setData(
             static_cast<GLsizeiptr>(ubuf.size() * sizeof(float)), ubuf.data(), GL_STATIC_DRAW);
         _instancedCubeVao.enableAttrib(2);
@@ -251,7 +265,7 @@ MinecraftGame::MinecraftGame(const Options& o) : Application(o), _worldSeed(42) 
     // Scan OBJ files
     {
         namespace fs = std::filesystem;
-        const char* paths[] = {"media/obj", "../../media/obj", "../media/obj"};
+        const char* paths[] = { "media/obj", "../../media/obj", "../media/obj" };
         std::string found;
         for (auto p : paths) { if (fs::exists(p)) { found = p; break; } }
         if (!found.empty()) {
@@ -270,8 +284,8 @@ MinecraftGame::MinecraftGame(const Options& o) : Application(o), _worldSeed(42) 
 
     _skybox = std::make_unique<SkyBox>(std::vector<std::string>{
         skyDir + "Right_Tex.jpg", skyDir + "Left_Tex.jpg",
-        skyDir + "Up_Tex.jpg",    skyDir + "Down_Tex.jpg",
-        skyDir + "Front_Tex.jpg", skyDir + "Back_Tex.jpg"
+            skyDir + "Up_Tex.jpg", skyDir + "Down_Tex.jpg",
+            skyDir + "Front_Tex.jpg", skyDir + "Back_Tex.jpg"
     });
     _animator.play(&_builder.idleClip);
 
@@ -348,12 +362,12 @@ void MinecraftGame::generateTerrain() {
             if (dist < TREE_CLEAR) continue;
             if ((hash((uint32_t)(x * 1931 + z * 8327 + _worldSeed * 999)) % 100) < 8) {
                 int groundY = (int)roundf(getTerrainHeight((float)x, (float)z));
-                auto git = _blocks.find({x, groundY, z});
+                auto git = _blocks.find({ x, groundY, z });
                 if (git != _blocks.end() && git->second == BT_GRASS) {
                     bool blocked = false;
                     for (int dx = -2; dx <= 2 && !blocked; ++dx)
                         for (int dz = -2; dz <= 2 && !blocked; ++dz)
-                            if (_blocks.find({x + dx, groundY + 1, z + dz}) != _blocks.end())
+                            if (_blocks.find({ x + dx, groundY + 1, z + dz }) != _blocks.end())
                                 blocked = true;
                     if (!blocked) placeTree(x, groundY + 1, z);
                 }
@@ -392,7 +406,7 @@ void MinecraftGame::generateTerrain() {
     for (int x = -SZ + 2; x < SZ; x++) {
         for (int z = -SZ + 2; z < SZ; z++) {
             int groundY = (int)roundf(getTerrainHeight((float)x, (float)z));
-            auto it = _blocks.find({x, groundY, z});
+            auto it = _blocks.find({ x, groundY, z });
             if (it != _blocks.end() && (it->second == BT_GRASS || it->second == BT_STONE) && groundY > 8) {
                 _blocks[{x, groundY + 1, z}] = BT_SNOW;
             }
@@ -403,7 +417,7 @@ void MinecraftGame::generateTerrain() {
     for (int x = -SZ + 2; x < SZ; x++) {
         for (int z = -SZ + 2; z < SZ; z++) {
             int groundY = (int)roundf(getTerrainHeight((float)x, (float)z));
-            auto it = _blocks.find({x, groundY, z});
+            auto it = _blocks.find({ x, groundY, z });
             if (it != _blocks.end() && it->second == BT_SAND && (hash((uint32_t)(x * 777 + z * 333)) % 10) < 3) {
                 _blocks[{x, groundY, z}] = BT_GRAVEL;
             }
@@ -431,7 +445,7 @@ void MinecraftGame::placeTree(int bx, int by, int bz) {
             for (int dz = -r; dz <= r; ++dz) {
                 if (dx == 0 && dz == 0 && dy < 2) continue; // skip trunk
                 int lx = bx + dx, ly = leafBase + dy, lz = bz + dz;
-                auto it = _blocks.find({lx, ly, lz});
+                auto it = _blocks.find({ lx, ly, lz });
                 if (it == _blocks.end())
                     _blocks[{lx, ly, lz}] = BT_LEAVES;
             }
@@ -440,7 +454,7 @@ void MinecraftGame::placeTree(int bx, int by, int bz) {
     _blocks[{bx, leafBase + 3, bz}] = BT_LEAVES;
 }
 
-    // ===== Shadow Mapping =====
+// ===== Shadow Mapping =====
 // Shadow Mapping
 // ============================================================
 void MinecraftGame::initShadowMap() {
@@ -453,7 +467,7 @@ void MinecraftGame::initShadowMap() {
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
     glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    float borderColor[] = {1, 1, 1, 1};
+    float borderColor[] = { 1, 1, 1, 1 };
     glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
     // Manual PCF in shader (5x5 kernel) — use NEAREST for correct depth sampling — we do manual comparison in shader
 
@@ -505,10 +519,22 @@ void MinecraftGame::renderShadowPass() {
     static std::vector<glm::vec3> shadowPos;
     shadowPos.clear();
     for (auto& kv : _blocks) {
-        if (kv.second == BT_AIR || kv.second == BT_WATER || kv.second == BT_LEAVES || kv.second == BT_GLASS || kv.second == BT_GLOWSTONE || kv.second == BT_SNOW) continue;
+        if (kv.second == BT_AIR ||
+            kv.second == BT_WATER ||
+            kv.second == BT_LEAVES ||
+            kv.second == BT_GLASS ||
+            kv.second == BT_GLOWSTONE ||
+            kv.second == BT_SNOW) {
+            continue;
+        }
         shadowPos.push_back(glm::vec3(kv.first));
     }
-    if (shadowPos.empty()) { glCullFace(GL_BACK); glBindFramebuffer(GL_FRAMEBUFFER, 0); return; }
+
+    if (shadowPos.empty()) {
+        glCullFace(GL_BACK);
+        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        return;
+    }
 
     _instanceVbo.bind();
     _instanceVbo.setData(
@@ -533,7 +559,7 @@ void MinecraftGame::renderShadowPass() {
     instShadowProg->setUniformMat4("uLS", _lightSpaceMatrix);
     _instancedCubeVao.bind();
     glDrawElementsInstanced(GL_TRIANGLES, (GLsizei)_cubeMesh->indexCount(),
-                            GL_UNSIGNED_INT, 0, (GLsizei)shadowPos.size());
+        GL_UNSIGNED_INT, 0, (GLsizei)shadowPos.size());
 
     glCullFace(GL_BACK);
     glDisable(GL_CULL_FACE);
@@ -573,313 +599,369 @@ void MinecraftGame::buildTextureAtlas() {
     std::vector<uint8_t> pixels(SZ * SZ * 4, 255);
 
     // Helper: draw a 16x16 pixel-art tile into atlas at given tile index
-    auto putTile16 = [&](int tileIdx, const uint8_t (&tex)[16][16][4]) {
+    auto putTile16 = [&](int tileIdx, const uint8_t(&tex)[16][16][4]) {
         int row = tileIdx / COLS, col = tileIdx % COLS;
         for (int py = 0; py < TP; ++py) {
             for (int px = 0; px < TP; ++px) {
                 int sx = px / SCALE, sy = py / SCALE;  // nearest-neighbor
                 int x = col * TP + px, y = row * TP + py;
                 int idx = (y * SZ + x) * 4;
-                pixels[idx+0] = tex[sy][sx][0];
-                pixels[idx+1] = tex[sy][sx][1];
-                pixels[idx+2] = tex[sy][sx][2];
-                pixels[idx+3] = tex[sy][sx][3];
+                pixels[idx + 0] = tex[sy][sx][0];
+                pixels[idx + 1] = tex[sy][sx][1];
+                pixels[idx + 2] = tex[sy][sx][2];
+                pixels[idx + 3] = tex[sy][sx][3];
             }
         }
-    };
+        };
 
     // Helper: fill a 16x16 tile with a solid/basic pattern
-    auto fill16 = [](uint8_t (&t)[16][16][4], uint8_t r, uint8_t g, uint8_t b, uint8_t a=255) {
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){t[y][x][0]=r;t[y][x][1]=g;t[y][x][2]=b;t[y][x][3]=a;}
-    };
+    auto fill16 = [](uint8_t(&t)[16][16][4], uint8_t r, uint8_t g, uint8_t b, uint8_t a = 255) {
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                t[y][x][0] = r; t[y][x][1] = g; t[y][x][2] = b; t[y][x][3] = a;
+            }
+        }
+        };
 
     // Simple hash for noise
-    auto h = [](int x, int y, int s=0, int s2=0) -> int {
-        uint32_t v=(uint32_t)(x*1271+y*91811+s*374761+s2*982451);
-        v=((v>>16)^v)*0x45d9f3b; v=((v>>16)^v)*0x45d9f3b;
-        return (int)((v>>16)^v);
-    };
+    auto h = [](int x, int y, int s = 0, int s2 = 0) -> int {
+        uint32_t v = (uint32_t)(x * 1271 + y * 91811 + s * 374761 + s2 * 982451);
+        v = ((v >> 16) ^ v) * 0x45d9f3b; v = ((v >> 16) ^ v) * 0x45d9f3b;
+        return (int)((v >> 16) ^ v);
+        };
 
     int ti = 0;
     uint8_t t[16][16][4];
 
     // ===== GRASS TOP ===== (bright green with darker dots)
-    fill16(t,0x7C,0xBD,0x6B);
-    for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-        if((h(x,y)&7)==0){t[y][x][0]=0x5A;t[y][x][1]=0x9E;t[y][x][2]=0x4B;}
-        if((h(x,y,1)&15)==0){t[y][x][0]=0x8E;t[y][x][1]=0xCF;t[y][x][2]=0x7E;}
+    fill16(t, 0x7C, 0xBD, 0x6B);
+    for (int y = 0; y < 16; y++)for (int x = 0; x < 16; x++) {
+        if ((h(x, y) & 7) == 0) { t[y][x][0] = 0x5A; t[y][x][1] = 0x9E; t[y][x][2] = 0x4B; }
+        if ((h(x, y, 1) & 15) == 0) { t[y][x][0] = 0x8E; t[y][x][1] = 0xCF; t[y][x][2] = 0x7E; }
     }
     putTile16(ti++, t);
 
     // ===== GRASS BOTTOM ===== (dirt brown)
-    fill16(t,0x8B,0x6B,0x14);
-    for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-        if((h(x,y)&5)==0){t[y][x][0]=0x7A;t[y][x][1]=0x5C;t[y][x][2]=0x10;}
-        if((h(x,y,2)&9)==0){t[y][x][0]=0x9E;t[y][x][1]=0x7E;t[y][x][2]=0x1A;}
+    fill16(t, 0x8B, 0x6B, 0x14);
+    for (int y = 0; y < 16; y++)for (int x = 0; x < 16; x++) {
+        if ((h(x, y) & 5) == 0) { t[y][x][0] = 0x7A; t[y][x][1] = 0x5C; t[y][x][2] = 0x10; }
+        if ((h(x, y, 2) & 9) == 0) { t[y][x][0] = 0x9E; t[y][x][1] = 0x7E; t[y][x][2] = 0x1A; }
     }
     putTile16(ti++, t);
 
     // ===== GRASS SIDE ===== (green on upper part, dirt below, with grass blade overlay on border)
-    for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-        if(y<4){  // grass part
-            t[y][x][0]=0x7C;t[y][x][1]=0xBD;t[y][x][2]=0x6B;
-            if((h(x,y)&7)==0){t[y][x][0]=0x5A;t[y][x][1]=0x9E;t[y][x][2]=0x4B;}
-        }else{  // dirt part
-            t[y][x][0]=0x8B;t[y][x][1]=0x6B;t[y][x][2]=0x14;
-            if((h(x,y)&5)==0){t[y][x][0]=0x7A;t[y][x][1]=0x5C;t[y][x][2]=0x10;}
+    for (int y = 0; y < 16; y++)for (int x = 0; x < 16; x++) {
+        if (y < 4) {  // grass part
+            t[y][x][0] = 0x7C; t[y][x][1] = 0xBD; t[y][x][2] = 0x6B;
+            if ((h(x, y) & 7) == 0) { t[y][x][0] = 0x5A; t[y][x][1] = 0x9E; t[y][x][2] = 0x4B; }
+        }
+        else {  // dirt part
+            t[y][x][0] = 0x8B; t[y][x][1] = 0x6B; t[y][x][2] = 0x14;
+            if ((h(x, y) & 5) == 0) { t[y][x][0] = 0x7A; t[y][x][1] = 0x5C; t[y][x][2] = 0x10; }
         }
         // grass blade overlay on left/right edges
-        if((y==3||y==4)&&(x==0||x==15)&&(h(x,y,3)&3)){t[y][x][0]=0x5A;t[y][x][1]=0x9E;t[y][x][2]=0x4B;}
-        t[y][x][3]=255;
+        if ((y == 3 || y == 4) && (x == 0 || x == 15) && (h(x, y, 3) & 3)) {
+            t[y][x][0] = 0x5A; t[y][x][1] = 0x9E; t[y][x][2] = 0x4B;
+        }
+        t[y][x][3] = 255;
     }
     putTile16(ti++, t);
 
     // ===== DIRT ===== (3 identical faces, brown with noise)
-    for(int i=0;i<3;i++){
-        fill16(t,0x8B,0x6B,0x14);
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-            if((h(x,y,i)&7)==0){t[y][x][0]=0x7A;t[y][x][1]=0x5C;t[y][x][2]=0x10;}
-            if((h(x,y,i,5)&13)==0){t[y][x][0]=0x9E;t[y][x][1]=0x7E;t[y][x][2]=0x1A;}
-            if((h(x,y,i,9)&23)==0){t[y][x][0]=0x6E;t[y][x][1]=0x50;t[y][x][2]=0x0A;}
+    for (int i = 0; i < 3; i++) {
+        fill16(t, 0x8B, 0x6B, 0x14);
+        for (int y = 0; y < 16; y++)for (int x = 0; x < 16; x++) {
+            if ((h(x, y, i) & 7) == 0) { t[y][x][0] = 0x7A; t[y][x][1] = 0x5C; t[y][x][2] = 0x10; }
+            if ((h(x, y, i, 5) & 13) == 0) { t[y][x][0] = 0x9E; t[y][x][1] = 0x7E; t[y][x][2] = 0x1A; }
+            if ((h(x, y, i, 9) & 23) == 0) { t[y][x][0] = 0x6E; t[y][x][1] = 0x50; t[y][x][2] = 0x0A; }
         }
         putTile16(ti++, t);
     }
 
     // ===== STONE ===== (grey with variations)
-    for(int i=0;i<3;i++){
-        fill16(t,0x7F,0x7F,0x7F);
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-            int rn=h(x,y,i);
-            if((rn&3)==0){t[y][x][0]=0x6A;t[y][x][1]=0x6A;t[y][x][2]=0x6A;}
-            else if((rn&7)==0){t[y][x][0]=0x93;t[y][x][1]=0x93;t[y][x][2]=0x93;}
-            if((rn&31)==0){t[y][x][0]=0x55;t[y][x][1]=0x55;t[y][x][2]=0x55;}
+    for (int i = 0; i < 3; i++) {
+        fill16(t, 0x7F, 0x7F, 0x7F);
+        for (int y = 0; y < 16; y++)for (int x = 0; x < 16; x++) {
+            int rn = h(x, y, i);
+            if ((rn & 3) == 0) { t[y][x][0] = 0x6A; t[y][x][1] = 0x6A; t[y][x][2] = 0x6A; }
+            else if ((rn & 7) == 0) { t[y][x][0] = 0x93; t[y][x][1] = 0x93; t[y][x][2] = 0x93; }
+            if ((rn & 31) == 0) { t[y][x][0] = 0x55; t[y][x][1] = 0x55; t[y][x][2] = 0x55; }
         }
         putTile16(ti++, t);
     }
 
     // ===== WOOD PLANKS TOP/BOTTOM ===== (rings)
-    for(int i=0;i<2;i++){
-        fill16(t,0xBC,0x88,0x44);
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-            int dx=x-8,dy=y-8; int dist=(int)sqrtf((float)(dx*dx+dy*dy));
-            int ring=dist/3;
-            if(ring%2==0&&dist<7){t[y][x][0]=0xA0;t[y][x][1]=0x70;t[y][x][2]=0x30;}
-            if(dist>7){t[y][x][0]=0x8C;t[y][x][1]=0x5E;t[y][x][2]=0x28;}
+    for (int i = 0; i < 2; i++) {
+        fill16(t, 0xBC, 0x88, 0x44);
+        for (int y = 0; y < 16; y++)for (int x = 0; x < 16; x++) {
+            int dx = x - 8, dy = y - 8; int dist = (int)sqrtf((float)(dx * dx + dy * dy));
+            int ring = dist / 3;
+            if (ring % 2 == 0 && dist < 7) { t[y][x][0] = 0xA0; t[y][x][1] = 0x70; t[y][x][2] = 0x30; }
+            if (dist > 7) { t[y][x][0] = 0x8C; t[y][x][1] = 0x5E; t[y][x][2] = 0x28; }
         }
         putTile16(ti++, t);
     }
     // ===== WOOD SIDE ===== (vertical bark stripes)
-    fill16(t,0x9C,0x6C,0x30);
-    for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-        int stripe=(x/3)&1;
-        if(stripe){t[y][x][0]=0xB8;t[y][x][1]=0x84;t[y][x][2]=0x40;}
-        else{t[y][x][0]=0x88;t[y][x][1]=0x5A;t[y][x][2]=0x24;}
-        if((y%5)==0){t[y][x][0]=(uint8_t)(t[y][x][0]*0.85f);t[y][x][1]=(uint8_t)(t[y][x][1]*0.85f);t[y][x][2]=(uint8_t)(t[y][x][2]*0.85f);}
+    fill16(t, 0x9C, 0x6C, 0x30);
+    for (int y = 0; y < 16; y++)for (int x = 0; x < 16; x++) {
+        int stripe = (x / 3) & 1;
+        if (stripe) { t[y][x][0] = 0xB8; t[y][x][1] = 0x84; t[y][x][2] = 0x40; }
+        else { t[y][x][0] = 0x88; t[y][x][1] = 0x5A; t[y][x][2] = 0x24; }
+        if ((y % 5) == 0) {
+            t[y][x][0] = (uint8_t)(t[y][x][0] * 0.85f);
+            t[y][x][1] = (uint8_t)(t[y][x][1] * 0.85f);
+            t[y][x][2] = (uint8_t)(t[y][x][2] * 0.85f);
+        }
     }
     putTile16(ti++, t);
 
     // ===== LEAVES ===== (dark green with transparent gaps)
-    for(int i=0;i<3;i++){
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-            if((h(x,y,i)&7)==0){t[y][x][0]=0;t[y][x][1]=0;t[y][x][2]=0;t[y][x][3]=0;}  // transparent holes
-            else{
-                t[y][x][0]=0x2D;t[y][x][1]=0x7A;t[y][x][2]=0x1E;t[y][x][3]=255;
-                if((h(x,y,i,3)&3)==0){t[y][x][0]=0x1E;t[y][x][1]=0x5E;t[y][x][2]=0x12;}
-                if((h(x,y,i,7)&7)==0){t[y][x][0]=0x3E;t[y][x][1]=0x92;t[y][x][2]=0x2A;}
+    for (int i = 0; i < 3; i++) {
+        for (int y = 0; y < 16; y++)
+            for (int x = 0; x < 16; x++) {
+                if ((h(x, y, i) & 7) == 0) {  // transparent holes
+                    t[y][x][0] = 0; t[y][x][1] = 0; t[y][x][2] = 0; t[y][x][3] = 0;
+                }
+                else {
+                    t[y][x][0] = 0x2D; t[y][x][1] = 0x7A; t[y][x][2] = 0x1E; t[y][x][3] = 255;
+                    if ((h(x, y, i, 3) & 3) == 0) { t[y][x][0] = 0x1E; t[y][x][1] = 0x5E; t[y][x][2] = 0x12; }
+                    if ((h(x, y, i, 7) & 7) == 0) { t[y][x][0] = 0x3E; t[y][x][1] = 0x92; t[y][x][2] = 0x2A; }
+                }
             }
-        }
         putTile16(ti++, t);
     }
 
     // ===== SAND ===== (tan with darker specks)
-    for(int i=0;i<3;i++){
-        fill16(t,0xDB,0xC9,0x8C);
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-            if((h(x,y,i)&3)==0){t[y][x][0]=0xC4;t[y][x][1]=0xB3;t[y][x][2]=0x7C;}
-            if((h(x,y,i,9)&11)==0){t[y][x][0]=0xEC;t[y][x][1]=0xDA;t[y][x][2]=0x9E;}
+    for (int i = 0; i < 3; i++) {
+        fill16(t, 0xDB, 0xC9, 0x8C);
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                if ((h(x, y, i) & 3) == 0) { t[y][x][0] = 0xC4; t[y][x][1] = 0xB3; t[y][x][2] = 0x7C; }
+                if ((h(x, y, i, 9) & 11) == 0) { t[y][x][0] = 0xEC; t[y][x][1] = 0xDA; t[y][x][2] = 0x9E; }
+            }
         }
         putTile16(ti++, t);
     }
 
     // ===== WATER ===== (blue with lighter wave pattern)
-    for(int i=0;i<3;i++){
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-            bool wave=((x+y+i*3)&4)==0;
-            t[y][x][0]=wave?0x3B:0x33;t[y][x][1]=wave?0x6B:0x55;t[y][x][2]=wave?0xE6:0xCC;t[y][x][3]=180;
+    for (int i = 0; i < 3; i++) {
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                bool wave = ((x + y + i * 3) & 4) == 0;
+                t[y][x][0] = wave ? 0x3B : 0x33;
+                t[y][x][1] = wave ? 0x6B : 0x55;
+                t[y][x][2] = wave ? 0xE6 : 0xCC;
+                t[y][x][3] = 180;
+            }
         }
         putTile16(ti++, t);
     }
 
     // ===== BRICK ===== (red bricks with grey mortar)
-    for(int i=0;i<3;i++){
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-            int bx=x/8,by=y/4;
-            bool mortarX=(x%8==0||x%8==7),mortarY=(y%4==0||y%4==3);
-            bool halfMortar=(by%2==0&&x%8==4);  // offset brick pattern
-            if(mortarX||mortarY||halfMortar){t[y][x][0]=0x8B;t[y][x][1]=0x73;t[y][x][2]=0x55;}
-            else{
-                t[y][x][0]=0x99;t[y][x][1]=0x44;t[y][x][2]=0x33;
-                if((h(x,y,i)&7)==0){t[y][x][0]=0xAA;t[y][x][1]=0x55;t[y][x][2]=0x44;}
-                if((h(x,y,i,3)&15)==0){t[y][x][0]=0x88;t[y][x][1]=0x33;t[y][x][2]=0x22;}
+    for (int i = 0; i < 3; i++) {
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                int bx = x / 8, by = y / 4;
+                bool mortarX = (x % 8 == 0 || x % 8 == 7), mortarY = (y % 4 == 0 || y % 4 == 3);
+                bool halfMortar = (by % 2 == 0 && x % 8 == 4);  // offset brick pattern
+                if (mortarX || mortarY || halfMortar) { t[y][x][0] = 0x8B; t[y][x][1] = 0x73; t[y][x][2] = 0x55; }
+                else {
+                    t[y][x][0] = 0x99; t[y][x][1] = 0x44; t[y][x][2] = 0x33;
+                    if ((h(x, y, i) & 7) == 0) { t[y][x][0] = 0xAA; t[y][x][1] = 0x55; t[y][x][2] = 0x44; }
+                    if ((h(x, y, i, 3) & 15) == 0) { t[y][x][0] = 0x88; t[y][x][1] = 0x33; t[y][x][2] = 0x22; }
+                }
+                t[y][x][3] = 255;
             }
-            t[y][x][3]=255;
         }
         putTile16(ti++, t);
     }
 
     // ===== COBBLESTONE ===== (grey stone blocks with darker mortar lines)
-    for(int i=0;i<3;i++){
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-            // Draw stone cells with outlines
-            int cx=(x/6),cy=(y/6);
-            bool lineX=(x%6==0),lineY=(y%6==0);
-            if(lineX||lineY){t[y][x][0]=0x55;t[y][x][1]=0x55;t[y][x][2]=0x55;}  // mortar
-            else{
-                t[y][x][0]=0x7F;t[y][x][1]=0x7F;t[y][x][2]=0x7F;
-                int rn=h(cx,cy,i);
-                if((rn&3)==0){t[y][x][0]=0x6A;t[y][x][1]=0x6A;t[y][x][2]=0x6A;}
-                else if((rn&7)==0){t[y][x][0]=0x93;t[y][x][1]=0x93;t[y][x][2]=0x93;}
+    for (int i = 0; i < 3; i++) {
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                // Draw stone cells with outlines
+                int cx = (x / 6), cy = (y / 6);
+                bool lineX = (x % 6 == 0), lineY = (y % 6 == 0);
+                if (lineX || lineY) { t[y][x][0] = 0x55; t[y][x][1] = 0x55; t[y][x][2] = 0x55; }  // mortar
+                else {
+                    t[y][x][0] = 0x7F; t[y][x][1] = 0x7F; t[y][x][2] = 0x7F;
+                    int rn = h(cx, cy, i);
+                    if ((rn & 3) == 0) { t[y][x][0] = 0x6A; t[y][x][1] = 0x6A; t[y][x][2] = 0x6A; }
+                    else if ((rn & 7) == 0) { t[y][x][0] = 0x93; t[y][x][1] = 0x93; t[y][x][2] = 0x93; }
+                }
+                t[y][x][3] = 255;
             }
-            t[y][x][3]=255;
         }
         putTile16(ti++, t);
     }
 
     // ===== GLASS ===== (light blue, clear center, white border pixels)
-    for(int i=0;i<3;i++){
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-            bool border=(x==0||x==15||y==0||y==15);
-            if(border){t[y][x][0]=0xDB;t[y][x][1]=0xF2;t[y][x][2]=0xFC;t[y][x][3]=200;}
-            else{t[y][x][0]=0xCF;t[y][x][1]=0xE5;t[y][x][2]=0xF5;t[y][x][3]=80;}
+    for (int i = 0; i < 3; i++) {
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                bool border = (x == 0 || x == 15 || y == 0 || y == 15);
+                if (border) { t[y][x][0] = 0xDB; t[y][x][1] = 0xF2; t[y][x][2] = 0xFC; t[y][x][3] = 200; }
+                else { t[y][x][0] = 0xCF; t[y][x][1] = 0xE5; t[y][x][2] = 0xF5; t[y][x][3] = 80; }
+            }
         }
         putTile16(ti++, t);
     }
 
     // ===== PLANKS ===== (warm wood with horizontal grain)
-    for(int i=0;i<3;i++){
-        fill16(t,0xC8,0x98,0x48);
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-            int grain=(y/2)&1;
-            if(grain){t[y][x][0]=0xD8;t[y][x][1]=0xA8;t[y][x][2]=0x58;}
-            else{t[y][x][0]=0xB8;t[y][x][1]=0x88;t[y][x][2]=0x38;}
-            if((h(x,y,i)&15)==0){t[y][x][0]=(uint8_t)(t[y][x][0]*0.88f);t[y][x][1]=(uint8_t)(t[y][x][1]*0.88f);t[y][x][2]=(uint8_t)(t[y][x][2]*0.88f);}
+    for (int i = 0; i < 3; i++) {
+        fill16(t, 0xC8, 0x98, 0x48);
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                int grain = (y / 2) & 1;
+                if (grain) { t[y][x][0] = 0xD8; t[y][x][1] = 0xA8; t[y][x][2] = 0x58; }
+                else { t[y][x][0] = 0xB8; t[y][x][1] = 0x88; t[y][x][2] = 0x38; }
+
+                if ((h(x, y, i) & 15) == 0) {
+                    t[y][x][0] = (uint8_t)(t[y][x][0] * 0.88f);
+                    t[y][x][1] = (uint8_t)(t[y][x][1] * 0.88f);
+                    t[y][x][2] = (uint8_t)(t[y][x][2] * 0.88f);
+                }
+            }
         }
         putTile16(ti++, t);
     }
 
     // ===== OBSIDIAN ===== (dark purple, lighter edge, glossy spots)
-    for(int i=0;i<3;i++){
-        fill16(t,0x15,0x02,0x1E);
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-            bool edge=(x==0||x==15||y==0||y==15);
-            if(edge){t[y][x][0]=0x3C;t[y][x][1]=0x12;t[y][x][2]=0x63;}
-            if((h(x,y,i)&15)==0){t[y][x][0]=0x28;t[y][x][1]=0x08;t[y][x][2]=0x48;}
-            if((h(x,y,i,7)&31)==0){t[y][x][0]=0x0A;t[y][x][1]=0x01;t[y][x][2]=0x12;}
+    for (int i = 0; i < 3; i++) {
+        fill16(t, 0x15, 0x02, 0x1E);
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                bool edge = (x == 0 || x == 15 || y == 0 || y == 15);
+                if (edge) { t[y][x][0] = 0x3C; t[y][x][1] = 0x12; t[y][x][2] = 0x63; }
+                if ((h(x, y, i) & 15) == 0) { t[y][x][0] = 0x28; t[y][x][1] = 0x08; t[y][x][2] = 0x48; }
+                if ((h(x, y, i, 7) & 31) == 0) { t[y][x][0] = 0x0A; t[y][x][1] = 0x01; t[y][x][2] = 0x12; }
+            }
         }
         putTile16(ti++, t);
     }
 
     // ===== SNOW ===== (white with subtle blue shadow)
-    for(int i=0;i<3;i++){
-        fill16(t,0xF0,0xF7,0xFF);
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-            if((h(x,y,i)&7)==0){t[y][x][0]=0xE2;t[y][x][1]=0xEC;t[y][x][2]=0xFA;}
-            if((h(x,y,i,4)&23)==0){t[y][x][0]=0xFA;t[y][x][1]=0xFC;t[y][x][2]=0xFF;}
+    for (int i = 0; i < 3; i++) {
+        fill16(t, 0xF0, 0xF7, 0xFF);
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                if ((h(x, y, i) & 7) == 0) { t[y][x][0] = 0xE2; t[y][x][1] = 0xEC; t[y][x][2] = 0xFA; }
+                if ((h(x, y, i, 4) & 23) == 0) { t[y][x][0] = 0xFA; t[y][x][1] = 0xFC; t[y][x][2] = 0xFF; }
+            }
         }
         putTile16(ti++, t);
     }
 
     // ===== GRAVEL ===== (grey-brown pebbles)
-    for(int i=0;i<3;i++){
-        fill16(t,0x80,0x7B,0x78);
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-            int rn=h(x,y,i);
-            if((rn&3)==0){t[y][x][0]=0x72;t[y][x][1]=0x6D;t[y][x][2]=0x6A;}
-            if((rn&7)==0){t[y][x][0]=0x8E;t[y][x][1]=0x89;t[y][x][2]=0x86;}
-            if((rn&15)==0){t[y][x][0]=0x66;t[y][x][1]=0x61;t[y][x][2]=0x5E;}
-            // lighter pebble
-            if((rn&31)==0){t[y][x][0]=0x9C;t[y][x][1]=0x97;t[y][x][2]=0x94;}
+    for (int i = 0; i < 3; i++) {
+        fill16(t, 0x80, 0x7B, 0x78);
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                int rn = h(x, y, i);
+                if ((rn & 3) == 0) { t[y][x][0] = 0x72; t[y][x][1] = 0x6D; t[y][x][2] = 0x6A; }
+                if ((rn & 7) == 0) { t[y][x][0] = 0x8E; t[y][x][1] = 0x89; t[y][x][2] = 0x86; }
+                if ((rn & 15) == 0) { t[y][x][0] = 0x66; t[y][x][1] = 0x61; t[y][x][2] = 0x5E; }
+                // lighter pebble
+                if ((rn & 31) == 0) { t[y][x][0] = 0x9C; t[y][x][1] = 0x97; t[y][x][2] = 0x94; }
+            }
         }
         putTile16(ti++, t);
     }
 
     // ===== GLOWSTONE ===== (golden with bright glowing center and darker edges)
-    for(int i=0;i<3;i++){
-        fill16(t,0xC5,0x92,0x3B);
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-            int dx=x-8,dy=y-8; int dist=dx*dx+dy*dy;
-            if(dist<20){t[y][x][0]=0xEB;t[y][x][1]=0xCA;t[y][x][2]=0x79;}  // bright center
-            else if(dist<50){t[y][x][0]=0xD8;t[y][x][1]=0xAD;t[y][x][2]=0x55;}
-            else{t[y][x][0]=0xA0;t[y][x][1]=0x70;t[y][x][2]=0x28;}
-            if((h(x,y,i)&7)==0){t[y][x][0]=0xF5;t[y][x][1]=0xDE;t[y][x][2]=0x90;}  // extra glow spots
-            if(x==0||x==15||y==0||y==15){t[y][x][0]=0x8A;t[y][x][1]=0x60;t[y][x][2]=0x20;}
+    for (int i = 0; i < 3; i++) {
+        fill16(t, 0xC5, 0x92, 0x3B);
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                int dx = x - 8, dy = y - 8; int dist = dx * dx + dy * dy;
+                if (dist < 20) { t[y][x][0] = 0xEB; t[y][x][1] = 0xCA; t[y][x][2] = 0x79; }  // bright center
+                else if (dist < 50) { t[y][x][0] = 0xD8; t[y][x][1] = 0xAD; t[y][x][2] = 0x55; }
+                else { t[y][x][0] = 0xA0; t[y][x][1] = 0x70; t[y][x][2] = 0x28; }
+                if ((h(x, y, i) & 7) == 0) { t[y][x][0] = 0xF5; t[y][x][1] = 0xDE; t[y][x][2] = 0x90; }  // extra glow spots
+                if (x == 0 || x == 15 || y == 0 || y == 15) { t[y][x][0] = 0x8A; t[y][x][1] = 0x60; t[y][x][2] = 0x20; }
+            }
         }
         putTile16(ti++, t);
     }
 
     // ===== BOOKSHELF ===== (wood top/bottom, colorful book rows in middle)
-    for(int i=0;i<3;i++){
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-            if(y<2||y>13){  // top/bottom wood
-                t[y][x][0]=0x8B;t[y][x][1]=0x6B;t[y][x][2]=0x14;
-            }else if(y==2||y==13){  // darker divider
-                t[y][x][0]=0x6B;t[y][x][1]=0x4B;t[y][x][2]=0x0A;
-            }else{
-                // Books: colored vertical stripes
-                int col=(x/3)&7;
-                uint8_t cr=0,cg=0,cb=0;
-                switch(col){
-                    case 0:cr=0x99;cg=0x33;cb=0x33;break;
-                    case 1:cr=0x33;cg=0x99;cb=0x33;break;
-                    case 2:cr=0x33;cg=0x33;cb=0x99;break;
-                    case 3:cr=0xCC;cg=0xAA;cb=0x33;break;
-                    case 4:cr=0x99;cg=0x33;cb=0x99;break;
-                    case 5:cr=0xCC;cg=0x77;cb=0x33;break;
-                    case 6:cr=0x33;cg=0x99;cb=0x99;break;
-                    case 7:cr=0x77;cg=0x77;cb=0x77;break;
+    for (int i = 0; i < 3; i++) {
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                if (y < 2 || y>13) {  // top/bottom wood
+                    t[y][x][0] = 0x8B; t[y][x][1] = 0x6B; t[y][x][2] = 0x14;
                 }
-                // shelf dividers
-                if(y%4==2){t[y][x][0]=0xAA;t[y][x][1]=0x88;t[y][x][2]=0x44;}
-                else if(x%3==0){t[y][x][0]=0x6B;t[y][x][1]=0x4B;t[y][x][2]=0x0A;}
-                else{t[y][x][0]=cr;t[y][x][1]=cg;t[y][x][2]=cb;}
+                else if (y == 2 || y == 13) {  // darker divider
+                    t[y][x][0] = 0x6B; t[y][x][1] = 0x4B; t[y][x][2] = 0x0A;
+                }
+                else {
+                    // Books: colored vertical stripes
+                    int col = (x / 3) & 7;
+                    uint8_t cr = 0, cg = 0, cb = 0;
+                    switch (col) {
+                    case 0:cr = 0x99; cg = 0x33; cb = 0x33; break;
+                    case 1:cr = 0x33; cg = 0x99; cb = 0x33; break;
+                    case 2:cr = 0x33; cg = 0x33; cb = 0x99; break;
+                    case 3:cr = 0xCC; cg = 0xAA; cb = 0x33; break;
+                    case 4:cr = 0x99; cg = 0x33; cb = 0x99; break;
+                    case 5:cr = 0xCC; cg = 0x77; cb = 0x33; break;
+                    case 6:cr = 0x33; cg = 0x99; cb = 0x99; break;
+                    case 7:cr = 0x77; cg = 0x77; cb = 0x77; break;
+                    }
+                    // shelf dividers
+                    if (y % 4 == 2) { t[y][x][0] = 0xAA; t[y][x][1] = 0x88; t[y][x][2] = 0x44; }
+                    else if (x % 3 == 0) { t[y][x][0] = 0x6B; t[y][x][1] = 0x4B; t[y][x][2] = 0x0A; }
+                    else { t[y][x][0] = cr; t[y][x][1] = cg; t[y][x][2] = cb; }
+                }
+                t[y][x][3] = 255;
             }
-            t[y][x][3]=255;
         }
         putTile16(ti++, t);
     }
 
     // ===== LOG TOP/BOTTOM ===== (tree rings)
-    for(int i=0;i<2;i++){
-        fill16(t,0x6D,0x4C,0x2E);
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-            int dx=x-8,dy=y-8; int dist=(int)sqrtf((float)(dx*dx+dy*dy));
-            int ring=dist/2;
-            if(ring%2==0&&dist<7){t[y][x][0]=0x50;t[y][x][1]=0x34;t[y][x][2]=0x1C;}
-            if(dist>7){t[y][x][0]=0x45;t[y][x][1]=0x2C;t[y][x][2]=0x18;}
+    for (int i = 0; i < 2; i++) {
+        fill16(t, 0x6D, 0x4C, 0x2E);
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                int dx = x - 8, dy = y - 8; int dist = (int)sqrtf((float)(dx * dx + dy * dy));
+                int ring = dist / 2;
+                if (ring % 2 == 0 && dist < 7) { t[y][x][0] = 0x50; t[y][x][1] = 0x34; t[y][x][2] = 0x1C; }
+                if (dist > 7) { t[y][x][0] = 0x45; t[y][x][1] = 0x2C; t[y][x][2] = 0x18; }
+            }
         }
         putTile16(ti++, t);
     }
     // ===== LOG SIDE ===== (bark texture)
-    fill16(t,0x6D,0x4C,0x2E);
-    for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-        int stripe=(x/4)&1;
-        if(stripe){t[y][x][0]=0x80;t[y][x][1]=0x5C;t[y][x][2]=0x3A;}
-        else{t[y][x][0]=0x5A;t[y][x][1]=0x3C;t[y][x][2]=0x22;}
-        if((y%4)==0){t[y][x][0]=(uint8_t)(t[y][x][0]*0.85f);t[y][x][1]=(uint8_t)(t[y][x][1]*0.85f);t[y][x][2]=(uint8_t)(t[y][x][2]*0.85f);}
+    fill16(t, 0x6D, 0x4C, 0x2E);
+    for (int y = 0; y < 16; y++) {
+        for (int x = 0; x < 16; x++) {
+            int stripe = (x / 4) & 1;
+            if (stripe) { t[y][x][0] = 0x80; t[y][x][1] = 0x5C; t[y][x][2] = 0x3A; }
+            else { t[y][x][0] = 0x5A; t[y][x][1] = 0x3C; t[y][x][2] = 0x22; }
+            if ((y % 4) == 0) {
+                t[y][x][0] = (uint8_t)(t[y][x][0] * 0.85f);
+                t[y][x][1] = (uint8_t)(t[y][x][1] * 0.85f);
+                t[y][x][2] = (uint8_t)(t[y][x][2] * 0.85f);
+            }
+        }
     }
     putTile16(ti++, t);
 
     // ===== IRON ===== (metallic grey, highlight on top-left, dark on bottom-right)
-    for(int i=0;i<3;i++){
-        fill16(t,0xD1,0xD1,0xD1);
-        for(int y=0;y<16;y++)for(int x=0;x<16;x++){
-            // highlight on top-left edges
-            if(x<2||y<2){t[y][x][0]=0xE8;t[y][x][1]=0xE8;t[y][x][2]=0xE8;}
-            // shadow on bottom-right
-            if(x>13||y>13){t[y][x][0]=0xB8;t[y][x][1]=0xB8;t[y][x][2]=0xB8;}
-            if(x==15&&y==15){t[y][x][0]=0xA0;t[y][x][1]=0xA0;t[y][x][2]=0xA0;}
-            // random spots
-            if((h(x,y,i)&11)==0){t[y][x][0]=0xC4;t[y][x][1]=0xC4;t[y][x][2]=0xC7;}
+    for (int i = 0; i < 3; i++) {
+        fill16(t, 0xD1, 0xD1, 0xD1);
+        for (int y = 0; y < 16; y++) {
+            for (int x = 0; x < 16; x++) {
+                // highlight on top-left edges
+                if (x < 2 || y < 2) { t[y][x][0] = 0xE8; t[y][x][1] = 0xE8; t[y][x][2] = 0xE8; }
+                // shadow on bottom-right
+                if (x > 13 || y > 13) { t[y][x][0] = 0xB8; t[y][x][1] = 0xB8; t[y][x][2] = 0xB8; }
+                if (x == 15 && y == 15) { t[y][x][0] = 0xA0; t[y][x][1] = 0xA0; t[y][x][2] = 0xA0; }
+                // random spots
+                if ((h(x, y, i) & 11) == 0) { t[y][x][0] = 0xC4; t[y][x][1] = 0xC4; t[y][x][2] = 0xC7; }
+            }
         }
         putTile16(ti++, t);
     }
@@ -905,7 +987,7 @@ void MinecraftGame::buildEarthTexture() {
         // Fallback: create a blue sphere
         std::vector<uint8_t> fb(64 * 64 * 4, 255);
         for (int i = 0; i < 64 * 64; i++) {
-            fb[i*4]=40; fb[i*4+1]=100; fb[i*4+2]=200;
+            fb[i * 4] = 40; fb[i * 4 + 1] = 100; fb[i * 4 + 2] = 200;
         }
         glGenTextures(1, &_earthTex);
         glBindTexture(GL_TEXTURE_2D, _earthTex);
@@ -933,14 +1015,14 @@ void MinecraftGame::createShowcaseObjects() {
 
     struct PrimDef { std::function<Element()> fn; };
     PrimDef defs[] = {
-        { []{ return Primitives::CreateCube(1.2f); } },
-        { []{ return Primitives::CreateSphere(0.8f, 32); } },
-        { []{ return Primitives::CreateCylinder(0.7f, 1.5f, 32); } },
-        { []{ return Primitives::CreateCone(0.8f, 1.5f, 32); } },
-        { []{ return Primitives::CreatePrism(5, 0.8f, 1.2f); } },
-        { []{ return Primitives::CreateFrustum(6, 0.9f, 0.4f, 1.2f); } },
+        { [] { return Primitives::CreateCube(1.2f); } },
+        { [] { return Primitives::CreateSphere(0.8f, 32); } },
+        { [] { return Primitives::CreateCylinder(0.7f, 1.5f, 32); } },
+        { [] { return Primitives::CreateCone(0.8f, 1.5f, 32); } },
+        { [] { return Primitives::CreatePrism(5, 0.8f, 1.2f); } },
+        { [] { return Primitives::CreateFrustum(6, 0.9f, 0.4f, 1.2f); } },
     };
-    const char* names[] = {"Cube","Sphere","Cylinder","Cone","Prism","Frustum"};
+    const char* names[] = { "Cube","Sphere","Cylinder","Cone","Prism","Frustum" };
     for (int i = 0; i < 6; i++) {
         auto e = defs[i].fn();
         _primitiveMeshes.push_back(std::make_unique<Mesh>(e.vertices, e.indices));
@@ -983,7 +1065,7 @@ void MinecraftGame::initFaceQuad() {
          0.5f,  0.5f, 0,  1, 0,
         -0.5f,  0.5f, 0,  0, 0,
     };
-    unsigned int quadIdx[] = {0, 1, 2, 0, 2, 3};
+    unsigned int quadIdx[] = { 0, 1, 2, 0, 2, 3 };
 
     _faceQuadVao.bind();
     _faceQuadVbo.bind();
@@ -993,10 +1075,10 @@ void MinecraftGame::initFaceQuad() {
 
     // pos
     _faceQuadVao.enableAttrib(0);
-    _faceQuadVao.setAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)0);
+    _faceQuadVao.setAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)0);
     // uv
     _faceQuadVao.enableAttrib(2);
-    _faceQuadVao.setAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5*sizeof(float), (void*)(3*sizeof(float)));
+    _faceQuadVao.setAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 5 * sizeof(float), (void*)(3 * sizeof(float)));
 
     _faceQuadVao.unbind();
 
@@ -1053,7 +1135,7 @@ void MinecraftGame::initSnow() {
         -w, -w, 0, 0, 0,   w, -w, 0, 1, 0,
         -w,  w, 0, 0, 1,   w,  w, 0, 1, 1,
     };
-    uint32_t idx[] = {0,1,2, 2,1,3};
+    uint32_t idx[] = { 0,1,2, 2,1,3 };
     _snowVao.bind();
     _snowVbo.bind();
     _snowVbo.setData(sizeof(verts), verts, GL_STATIC_DRAW);
@@ -1126,7 +1208,7 @@ void MinecraftGame::drawSnow(const glm::mat4& proj, const glm::mat4& view) {
     // Extract camera right & up from view matrix (inverse of view)
     glm::mat4 invView = glm::inverse(view);
     glm::vec3 camRight = glm::normalize(glm::vec3(invView[0]));
-    glm::vec3 camUp    = glm::normalize(glm::vec3(invView[1]));
+    glm::vec3 camUp = glm::normalize(glm::vec3(invView[1]));
 
     _snowShader->use();
     _snowShader->setUniformMat4("uVP", vp);
@@ -1173,13 +1255,78 @@ void MinecraftGame::handleInput() {
 
     // ---- F2: screenshot (PNG) ----
     // ---- E: toggle inventory ----
-    { static bool w=false; bool n=(_input.keyboard.keyStates[GLFW_KEY_E]!=GLFW_RELEASE); if(n&&!w&&!ImGui::GetIO().WantCaptureKeyboard){_inventoryOpen=!_inventoryOpen;} w=n; }
+    {
+        static bool w = false;
+        bool n = (_input.keyboard.keyStates[GLFW_KEY_E] != GLFW_RELEASE);
+        if (n && !w && !ImGui::GetIO().WantCaptureKeyboard) {
+            _inventoryOpen = !_inventoryOpen;
+        }
+        w = n;
+    }
     // ---- I: cycle OBJ ----
-    { static bool w=false; bool n=(_input.keyboard.keyStates[GLFW_KEY_I]!=GLFW_RELEASE); if(n&&!w&&!ImGui::GetIO().WantCaptureKeyboard){_selectedObj=(_selectedObj+1)%(int)_objFiles.size(); _objMode=true;} w=n; }
+    {
+        static bool w = false;
+        bool n = (_input.keyboard.keyStates[GLFW_KEY_I] != GLFW_RELEASE);
+        if (n && !w && !ImGui::GetIO().WantCaptureKeyboard) {
+            _selectedObj = (_selectedObj + 1) % (int)_objFiles.size();
+            _objMode = true;
+        }
+        w = n;
+    }
     // ---- P: place OBJ ----
-    { static bool w=false; bool n=(_input.keyboard.keyStates[GLFW_KEY_P]!=GLFW_RELEASE); if(n&&!w&&_ghostPlaceValid&&!ImGui::GetIO().WantCaptureKeyboard){if(!_objFiles.empty()&&_objFiles[_selectedObj]!="(none)"){try{auto el=ObjLoader::Load("media/obj/"+_objFiles[_selectedObj]);PlacedObj po;po.mesh=std::make_unique<Mesh>(el.vertices,el.indices);po.name=_objFiles[_selectedObj];_placedObjs[_ghostPlace]=std::move(po);}catch(...){}}} w=n; }
+    {
+        static bool w = false;
+        bool n = (_input.keyboard.keyStates[GLFW_KEY_P] != GLFW_RELEASE);
+        if (n && !w && _ghostPlaceValid && !ImGui::GetIO().WantCaptureKeyboard) {
+            if (!_objFiles.empty() && _objFiles[_selectedObj] != "(none)") {
+                try {
+                    auto el = ObjLoader::Load("media/obj/" + _objFiles[_selectedObj]);
+                    PlacedObj po;
+                    po.mesh = std::make_unique<Mesh>(el.vertices, el.indices);
+                    po.name = _objFiles[_selectedObj];
+                    _placedObjs[_ghostPlace] = std::move(po);
+                } catch (...) {
+                }
+            }
+        }
+        w = n;
+    }
     // ---- X: export OBJs ----
-    { static bool w=false; bool n=(_input.keyboard.keyStates[GLFW_KEY_X]!=GLFW_RELEASE); if(n&&!w&&!ImGui::GetIO().WantCaptureKeyboard){Element all;for(auto&kv:_placedObjs){auto&po=kv.second;if(!po.mesh)continue;auto&sv=po.mesh->vertices();auto&si=po.mesh->indices();glm::vec3 off=glm::vec3(kv.first)+glm::vec3(0,1,0);uint32_t base=(uint32_t)all.vertices.size();for(auto&v:sv){auto v2=v;v2.position=v.position*po.scale+off;all.vertices.push_back(v2);}for(auto idx:si)all.indices.push_back(base+idx);}if(!all.vertices.empty()){std::filesystem::create_directories("media/obj");time_t now=time(nullptr);char fn[128];snprintf(fn,sizeof(fn),"media/obj/export_%lld.obj",(long long)now);ObjLoader::Save(fn,all);_screenshotFlash=1.5f;}} w=n; }
+    {
+        static bool w = false;
+        bool n = (_input.keyboard.keyStates[GLFW_KEY_X] != GLFW_RELEASE);
+        if (n && !w && !ImGui::GetIO().WantCaptureKeyboard) {
+            Element all;
+            for (auto& kv : _placedObjs) {
+                auto& po = kv.second;
+                if (!po.mesh) continue;
+
+                auto& sv = po.mesh->vertices();
+                auto& si = po.mesh->indices();
+                glm::vec3 off = glm::vec3(kv.first) + glm::vec3(0, 1, 0);
+                uint32_t base = (uint32_t)all.vertices.size();
+
+                for (auto& v : sv) {
+                    auto v2 = v;
+                    v2.position = v.position * po.scale + off;
+                    all.vertices.push_back(v2);
+                }
+                for (auto idx : si) {
+                    all.indices.push_back(base + idx);
+                }
+            }
+
+            if (!all.vertices.empty()) {
+                std::filesystem::create_directories("media/obj");
+                time_t now = time(nullptr);
+                char fn[128];
+                snprintf(fn, sizeof(fn), "media/obj/export_%lld.obj", (long long)now);
+                ObjLoader::Save(fn, all);
+                _screenshotFlash = 1.5f;
+            }
+        }
+        w = n;
+    }
     static bool f2WasDown = false;
     bool f2Now = (_input.keyboard.keyStates[GLFW_KEY_F2] != GLFW_RELEASE);
     if (f2Now && !f2WasDown) {
@@ -1190,8 +1337,8 @@ void MinecraftGame::handleInput() {
         std::vector<uint8_t> flipped(_windowWidth * _windowHeight * 3);
         for (int y = 0; y < _windowHeight; ++y)
             memcpy(&flipped[y * _windowWidth * 3],
-                   &pixels[(_windowHeight - 1 - y) * _windowWidth * 3],
-                   _windowWidth * 3);
+                &pixels[(_windowHeight - 1 - y) * _windowWidth * 3],
+                _windowWidth * 3);
         char fname[128];
         time_t now = time(nullptr);
         snprintf(fname, sizeof(fname), "screenshots/screenshot_%lld.png", (long long)now);
@@ -1206,18 +1353,51 @@ void MinecraftGame::handleInput() {
     if (lNow && !lWasDown) _settingsOpen = !_settingsOpen;
     lWasDown = lNow;
 
-    static bool oWasDown=false;
-    bool oNow=(_input.keyboard.keyStates[GLFW_KEY_O]!=GLFW_RELEASE);
-    if(oNow&&!oWasDown&&!ImGui::GetIO().WantCaptureKeyboard){
-        glm::ivec3 bestDoor(0); float bestDist=3.5f; bool found=false;
-        for(auto& kv:_blocks){if(kv.second!=BT_DOOR)continue;float d=glm::distance(glm::vec3(kv.first)+glm::vec3(0,2.5f,0),_playerPos+glm::vec3(0,1.2f,0));if(d<bestDist){bestDist=d;bestDoor=kv.first;found=true;}}
-        if(!found)for(auto& kv:_doorOpen){float d=glm::distance(glm::vec3(kv.first)+glm::vec3(0,2.5f,0),_playerPos+glm::vec3(0,1.2f,0));if(d<bestDist){bestDist=d;bestDoor=kv.first;found=true;}}
-        if(found&&!_doorAnim.count(bestDoor)){
-            if(_doorOpen.count(bestDoor)){_doorOpen.erase(bestDoor);DoorAnim da;da.angle=glm::half_pi<float>();da.target=0;da.speed=6.0f;_doorAnim[bestDoor]=da;}
-            else{DoorAnim da;da.angle=0;da.target=glm::half_pi<float>();da.speed=6.0f;_doorAnim[bestDoor]=da;}
+    static bool oWasDown = false;
+    bool oNow = (_input.keyboard.keyStates[GLFW_KEY_O] != GLFW_RELEASE);
+    if (oNow && !oWasDown && !ImGui::GetIO().WantCaptureKeyboard) {
+        glm::ivec3 bestDoor(0);
+        float bestDist = 3.5f;
+        bool found = false;
+        for (auto& kv : _blocks) {
+            if (kv.second != BT_DOOR) continue;
+            float d = glm::distance(glm::vec3(kv.first) + glm::vec3(0, 2.5f, 0), _playerPos + glm::vec3(0, 1.2f, 0));
+            if (d < bestDist) {
+                bestDist = d;
+                bestDoor = kv.first;
+                found = true;
+            }
+        }
+
+        if (!found) {
+            for (auto& kv : _doorOpen) {
+                float d = glm::distance(glm::vec3(kv.first) + glm::vec3(0, 2.5f, 0), _playerPos + glm::vec3(0, 1.2f, 0));
+                if (d < bestDist) {
+                    bestDist = d;
+                    bestDoor = kv.first;
+                    found = true;
+                }
+            }
+        }
+
+        if (found && !_doorAnim.count(bestDoor)) {
+            if (_doorOpen.count(bestDoor)) {
+                _doorOpen.erase(bestDoor);
+                DoorAnim da;
+                da.angle = glm::half_pi<float>();
+                da.target = 0; da.speed = 6.0f;
+                _doorAnim[bestDoor] = da;
+            }
+            else {
+                DoorAnim da;
+                da.angle = 0;
+                da.target = glm::half_pi<float>();
+                da.speed = 6.0f;
+                _doorAnim[bestDoor] = da;
+            }
         }
     }
-    oWasDown=oNow;
+    oWasDown = oNow;
 
     if (_inventoryOpen) {
         _input.mouse.scroll.xOffset = 0;
@@ -1251,8 +1431,8 @@ void MinecraftGame::handleInputFirstPerson() {
     float mdx = (float)(_input.mouse.move.xNow - _prevMX);
     float mdy = (float)(_input.mouse.move.yNow - _prevMY);
     _playerYaw -= mdx * 0.008f;
-    _fpPitch   -= mdy * 0.008f;
-    if (_fpPitch >  1.5f) _fpPitch =  1.5f;
+    _fpPitch -= mdy * 0.008f;
+    if (_fpPitch > 1.5f) _fpPitch = 1.5f;
     if (_fpPitch < -1.5f) _fpPitch = -1.5f;
     _prevMX = _input.mouse.move.xNow;
     _prevMY = _input.mouse.move.yNow;
@@ -1263,8 +1443,14 @@ void MinecraftGame::handleInputFirstPerson() {
     glm::vec3 fwd = fpForward();
     glm::vec3 right = glm::normalize(glm::cross(fwd, glm::vec3(0, 1, 0)));
     glm::vec3 moveDir(0);
-    if (_input.keyboard.keyStates[GLFW_KEY_W] != GLFW_RELEASE) { moveDir += glm::vec3(fwd.x, 0, fwd.z); moving = true; }
-    if (_input.keyboard.keyStates[GLFW_KEY_S] != GLFW_RELEASE) { moveDir -= glm::vec3(fwd.x, 0, fwd.z); moving = true; }
+    if (_input.keyboard.keyStates[GLFW_KEY_W] != GLFW_RELEASE) {
+        moveDir += glm::vec3(fwd.x, 0, fwd.z);
+        moving = true;
+    }
+    if (_input.keyboard.keyStates[GLFW_KEY_S] != GLFW_RELEASE) {
+        moveDir -= glm::vec3(fwd.x, 0, fwd.z);
+        moving = true;
+    }
     if (_input.keyboard.keyStates[GLFW_KEY_A] != GLFW_RELEASE) { moveDir -= right; moving = true; }
     if (_input.keyboard.keyStates[GLFW_KEY_D] != GLFW_RELEASE) { moveDir += right; moving = true; }
     if (moving) {
@@ -1292,11 +1478,22 @@ void MinecraftGame::handleInputFirstPerson() {
 
     // ---- Animation ----
     if (_jumping) {
-        if (_animState != JUMP) { _animator.crossFade(&_builder.jumpClip, 0.15f); _animState = JUMP; }
-    } else if (moving) {
-        if (_animState != WALK) { _animator.crossFade(&_builder.walkClip, 0.25f); _animState = WALK; }
-    } else {
-        if (_animState != IDLE) { _animator.crossFade(&_builder.idleClip, 0.30f); _animState = IDLE; }
+        if (_animState != JUMP) {
+            _animator.crossFade(&_builder.jumpClip, 0.15f);
+            _animState = JUMP;
+        }
+    }
+    else if (moving) {
+        if (_animState != WALK) {
+            _animator.crossFade(&_builder.walkClip, 0.25f);
+            _animState = WALK;
+        }
+    }
+    else {
+        if (_animState != IDLE) {
+            _animator.crossFade(&_builder.idleClip, 0.30f);
+            _animState = IDLE;
+        }
     }
 
     // ---- Raycast ----
@@ -1313,9 +1510,12 @@ void MinecraftGame::handleInputFirstPerson() {
                 _playerPos - glm::vec3(PLAYER_HALF_W, 0, PLAYER_HALF_W),
                 _playerPos + glm::vec3(PLAYER_HALF_W, PLAYER_HALF_H * 2.0f, PLAYER_HALF_W));
             _blocks[_ghostPlace] = _selectedBlock;
-            if (_selectedBlock > 0 && _selectedBlock < BT_COUNT) _blockCounts[_selectedBlock]++;
-            if (blockBox.overlaps(playerBox))
+            if (_selectedBlock > 0 && _selectedBlock < BT_COUNT) {
+                _blockCounts[_selectedBlock]++;
+            }
+            if (blockBox.overlaps(playerBox)) {
                 _playerPos.y = (float)(_ghostPlace.y + 1);
+            }
         }
     }
     fpLeftWas = fpLeft;
@@ -1326,7 +1526,9 @@ void MinecraftGame::handleInputFirstPerson() {
         if (_ghostHitValid) {
             int bt = _blocks[_ghostHit];
             spawnDroppedItem(_ghostHit, bt);
-            if (bt > 0 && bt < BT_COUNT) _blockCounts[bt]--;
+            if (bt > 0 && bt < BT_COUNT) {
+                _blockCounts[bt]--;
+            }
             _blocks.erase(_ghostHit);
         }
     }
@@ -1356,10 +1558,22 @@ void MinecraftGame::handleInputThirdPerson() {
     glm::vec3 camFwd = glm::vec3(-cos(ry), 0, -sin(ry));
     glm::vec3 camRight = glm::normalize(glm::cross(camFwd, glm::vec3(0, 1, 0)));
     glm::vec3 moveDir(0);
-    if (_input.keyboard.keyStates[GLFW_KEY_W] != GLFW_RELEASE) { moveDir += camFwd;  moving = true; }
-    if (_input.keyboard.keyStates[GLFW_KEY_S] != GLFW_RELEASE) { moveDir -= camFwd;  moving = true; }
-    if (_input.keyboard.keyStates[GLFW_KEY_A] != GLFW_RELEASE) { moveDir -= camRight; moving = true; }
-    if (_input.keyboard.keyStates[GLFW_KEY_D] != GLFW_RELEASE) { moveDir += camRight; moving = true; }
+    if (_input.keyboard.keyStates[GLFW_KEY_W] != GLFW_RELEASE) {
+        moveDir += camFwd;
+        moving = true;
+    }
+    if (_input.keyboard.keyStates[GLFW_KEY_S] != GLFW_RELEASE) {
+        moveDir -= camFwd;
+        moving = true;
+    }
+    if (_input.keyboard.keyStates[GLFW_KEY_A] != GLFW_RELEASE) {
+        moveDir -= camRight;
+        moving = true;
+    }
+    if (_input.keyboard.keyStates[GLFW_KEY_D] != GLFW_RELEASE) {
+        moveDir += camRight;
+        moving = true;
+    }
     if (moving) {
         float len = glm::length(moveDir);
         if (len > 0.001f) {
@@ -1371,14 +1585,20 @@ void MinecraftGame::handleInputThirdPerson() {
 
     // ---- Jump / Gravity ----
     if (_input.keyboard.keyStates[GLFW_KEY_SPACE] != GLFW_RELEASE && _onGround && !_jumping) {
-        _playerYVel = 8.0f; _onGround = false; _jumping = true; _jumpTimer = 0;
+        _playerYVel = 8.0f;
+        _onGround = false;
+        _jumping = true;
+        _jumpTimer = 0;
     }
     if (_jumping) {
         _playerYVel -= 12.0f * _deltaTime;
         _onGround = resolvePlayerMovement(_playerPos, glm::vec3(0, _playerYVel * _deltaTime, 0));
         if (_onGround) _playerYVel = 0;
         _jumpTimer += _deltaTime;
-        if (_jumpTimer > 0.6f) { _jumping = false; _jumpTimer = 0; }
+        if (_jumpTimer > 0.6f) {
+            _jumping = false;
+            _jumpTimer = 0;
+        }
     }
     if (!_onGround && !_jumping) {
         _playerYVel -= 12.0f * _deltaTime;
@@ -1388,11 +1608,22 @@ void MinecraftGame::handleInputThirdPerson() {
 
     // ---- Animation ----
     if (_jumping) {
-        if (_animState != JUMP) { _animator.crossFade(&_builder.jumpClip, 0.15f); _animState = JUMP; }
-    } else if (moving) {
-        if (_animState != WALK) { _animator.crossFade(&_builder.walkClip, 0.25f); _animState = WALK; }
-    } else {
-        if (_animState != IDLE) { _animator.crossFade(&_builder.idleClip, 0.30f); _animState = IDLE; }
+        if (_animState != JUMP) {
+            _animator.crossFade(&_builder.jumpClip, 0.15f);
+            _animState = JUMP;
+        }
+    }
+    else if (moving) {
+        if (_animState != WALK) {
+            _animator.crossFade(&_builder.walkClip, 0.25f);
+            _animState = WALK;
+        }
+    }
+    else {
+        if (_animState != IDLE) {
+            _animator.crossFade(&_builder.idleClip, 0.30f);
+            _animState = IDLE;
+        }
     }
 
     // ---- Camera follow ----
@@ -1405,12 +1636,13 @@ void MinecraftGame::handleInputThirdPerson() {
             _rightStartMY = _input.mouse.move.yNow;
         }
         float drag = fabsf(_input.mouse.move.xNow - _rightStartMX)
-                   + fabsf(_input.mouse.move.yNow - _rightStartMY);
+            + fabsf(_input.mouse.move.yNow - _rightStartMY);
         if (drag > 4.0f) _ctrl.orbit();
-    } else if (_rightStartMX != 0 || _rightStartMY != 0) {
+    }
+    else if (_rightStartMX != 0 || _rightStartMY != 0) {
         // Right released: check for click (not drag) → remove block
         float drag = fabsf(_input.mouse.move.xNow - _rightStartMX)
-                   + fabsf(_input.mouse.move.yNow - _rightStartMY);
+            + fabsf(_input.mouse.move.yNow - _rightStartMY);
         if (drag < 4.0f && _ghostHitValid && !ImGui::GetIO().WantCaptureMouse) {
             int bt = _blocks[_ghostHit];
             spawnDroppedItem(_ghostHit, bt);
@@ -1427,15 +1659,16 @@ void MinecraftGame::handleInputThirdPerson() {
     bool fNow = (_input.keyboard.keyStates[GLFW_KEY_F] != GLFW_RELEASE);
     if (fNow && !fWasDown) {
         if (_zoomedOut) {
-            _fc.dist  = _preZoomDist;
-            _fc.yaw   = _preZoomYaw;
+            _fc.dist = _preZoomDist;
+            _fc.yaw = _preZoomYaw;
             _fc.pitch = _preZoomPitch;
             _fc.target = _preZoomTarget;
             _zoomedOut = false;
-        } else {
-            _preZoomDist   = _fc.dist;
-            _preZoomYaw    = _fc.yaw;
-            _preZoomPitch  = _fc.pitch;
+        }
+        else {
+            _preZoomDist = _fc.dist;
+            _preZoomYaw = _fc.yaw;
+            _preZoomPitch = _fc.pitch;
             _preZoomTarget = _fc.target;
             _fc.target = _playerPos + glm::vec3(0, 1.0f, 0);
             _fc.zoomToFit((float)WORLD_SIZE);
@@ -1475,25 +1708,36 @@ void MinecraftGame::computeGhost() {
     if (_firstPerson) {
         // First-person: ray from player eyes through mouse cursor on screen
         float mx = glm::clamp(_input.mouse.move.xNow, 0.0f, (float)_windowWidth - 1.0f);
-        float my = (float)_windowHeight - glm::clamp(_input.mouse.move.yNow, 0.0f, (float)_windowHeight - 1.0f);
-        auto proj = glm::perspective(glm::radians(60.f), (float)_windowWidth / _windowHeight, 0.1f, 200.f);
+        float my = (float)_windowHeight -
+            glm::clamp(_input.mouse.move.yNow, 0.0f, (float)_windowHeight - 1.0f);
+        auto proj = glm::perspective(
+            glm::radians(60.f),
+            (float)_windowWidth / _windowHeight,
+            0.1f,
+            200.f);
         auto view = glm::lookAt(_playerPos + glm::vec3(0, 1.7f, 0),
-                                 _playerPos + glm::vec3(0, 1.7f, 0) + fpForward(),
-                                 glm::vec3(0, 1, 0));
+            _playerPos + glm::vec3(0, 1.7f, 0) + fpForward(),
+            glm::vec3(0, 1, 0));
         glm::vec4 vp(0, 0, (float)_windowWidth, (float)_windowHeight);
         glm::vec3 nearW = glm::unProject(glm::vec3(mx, my, 0.0f), view, proj, vp);
-        glm::vec3 farW  = glm::unProject(glm::vec3(mx, my, 1.0f), view, proj, vp);
+        glm::vec3 farW = glm::unProject(glm::vec3(mx, my, 1.0f), view, proj, vp);
         origin = nearW;
         dir = glm::normalize(farW - nearW);
-    } else {
+    }
+    else {
         // Third-person: ray from camera through mouse cursor position
         float mx = glm::clamp(_input.mouse.move.xNow, 0.0f, (float)_windowWidth - 1.0f);
-        float my = (float)_windowHeight - glm::clamp(_input.mouse.move.yNow, 0.0f, (float)_windowHeight - 1.0f);
-        auto proj = glm::perspective(glm::radians(60.f), (float)_windowWidth / _windowHeight, 0.1f, 200.f);
+        float my = (float)_windowHeight -
+            glm::clamp(_input.mouse.move.yNow, 0.0f, (float)_windowHeight - 1.0f);
+        auto proj = glm::perspective(
+            glm::radians(60.f),
+            (float)_windowWidth / _windowHeight,
+            0.1f,
+            200.f);
         auto view = _fc.viewMatrix();
         glm::vec4 vp(0, 0, (float)_windowWidth, (float)_windowHeight);
         glm::vec3 nearW = glm::unProject(glm::vec3(mx, my, 0.0f), view, proj, vp);
-        glm::vec3 farW  = glm::unProject(glm::vec3(mx, my, 1.0f), view, proj, vp);
+        glm::vec3 farW = glm::unProject(glm::vec3(mx, my, 1.0f), view, proj, vp);
         origin = nearW;
         dir = glm::normalize(farW - nearW);
     }
@@ -1627,8 +1871,8 @@ void MinecraftGame::drawDroppedItems(const glm::mat4& proj, const glm::mat4& vie
         float spin = di.beingPickedUp ? di.lifeTime * 6.0f : di.lifeTime * 1.5f;
 
         auto model = glm::translate(glm::mat4(1), di.pos + glm::vec3(0, bob, 0))
-                   * glm::rotate(glm::mat4(1), spin, glm::vec3(0, 1, 0))
-                   * glm::scale(baseScale, glm::vec3(scale));
+            * glm::rotate(glm::mat4(1), spin, glm::vec3(0, 1, 0))
+            * glm::scale(baseScale, glm::vec3(scale));
 
         int baseTile = (di.blockType - 1) * 3;
         drawTexturedLit(_texLitShader, _cubeMesh.get(), model, baseTile,
@@ -1657,45 +1901,71 @@ bool MinecraftGame::resolvePlayerMovement(glm::vec3& pos, const glm::vec3& desir
         [](int bt) { return bt != BT_WATER && bt != BT_DOOR && bt != BT_GLASS && bt != BT_GLOWSTONE && bt != BT_SNOW; });
     pos += resolved;
 
-    const float Hw=1.0f, Hh=3.0f, Hd=0.35f, Fw=0.12f;
-    for(auto& kv:_blocks){
-        if(kv.second!=BT_DOOR)continue;
-        glm::ivec3 dp=kv.first;bool isOpen=_doorOpen.count(dp)||_doorAnim.count(dp);
-        float cy=(float)dp.y+2.5f, lowY=cy-Hh, highY=cy+Hh;
-        AABB pBox=AABB::fromMinMax(pos-glm::vec3(PLAYER_HALF_W,0,PLAYER_HALF_W),pos+glm::vec3(PLAYER_HALF_W,PLAYER_HALF_H*2,PLAYER_HALF_W));
-        if(!isOpen){
-            AABB doorBox=AABB::fromMinMax(glm::vec3(dp.x-Hw,lowY,dp.z-Hd),glm::vec3(dp.x+Hw,highY,dp.z+Hd));
-            if(!doorBox.overlaps(pBox))continue;
-            float ox=std::min(pBox.max.x-doorBox.min.x,doorBox.max.x-pBox.min.x),oy=std::min(pBox.max.y-doorBox.min.y,doorBox.max.y-pBox.min.y),oz=std::min(pBox.max.z-doorBox.min.z,doorBox.max.z-pBox.min.z);
-            float nox=ox/Hw, noy=oy/Hh, noz=oz/Hd;
-            if(noy<nox&&noy<noz){pos.y+=(pBox.min.y+pBox.max.y<doorBox.min.y+doorBox.max.y)?-oy:oy;if(pBox.min.y<doorBox.min.y+doorBox.max.y)onGround=true;}
-            else if(nox<noz)pos.x+=(pBox.min.x+pBox.max.x<doorBox.min.x+doorBox.max.x)?-ox:ox;
-            else pos.z+=(pBox.min.z+pBox.max.z<doorBox.min.z+doorBox.max.z)?-oz:oz;
+    const float Hw = 1.0f, Hh = 3.0f, Hd = 0.35f, Fw = 0.12f;
+    for (auto& kv : _blocks) {
+        if (kv.second != BT_DOOR)continue;
+        glm::ivec3 dp = kv.first; bool isOpen = _doorOpen.count(dp) || _doorAnim.count(dp);
+        float cy = (float)dp.y + 2.5f, lowY = cy - Hh, highY = cy + Hh;
+        AABB pBox = AABB::fromMinMax(
+            pos - glm::vec3(PLAYER_HALF_W, 0, PLAYER_HALF_W),
+            pos + glm::vec3(PLAYER_HALF_W, PLAYER_HALF_H * 2, PLAYER_HALF_W));
+        if (!isOpen) {
+            AABB doorBox = AABB::fromMinMax(
+                glm::vec3(dp.x - Hw, lowY, dp.z - Hd),
+                glm::vec3(dp.x + Hw, highY, dp.z + Hd));
+            if (!doorBox.overlaps(pBox))continue;
+            float ox = std::min(pBox.max.x - doorBox.min.x, doorBox.max.x - pBox.min.x);
+            float oy = std::min(pBox.max.y - doorBox.min.y, doorBox.max.y - pBox.min.y);
+            float oz = std::min(pBox.max.z - doorBox.min.z, doorBox.max.z - pBox.min.z);
+            float nox = ox / Hw, noy = oy / Hh, noz = oz / Hd;
+            if (noy < nox && noy < noz) {
+                pos.y +=
+                    (pBox.min.y + pBox.max.y < doorBox.min.y + doorBox.max.y) ? -oy : oy;
+                if (pBox.min.y < doorBox.min.y + doorBox.max.y) onGround = true;
+            }
+            else if (nox < noz)pos.x += (pBox.min.x + pBox.max.x < doorBox.min.x + doorBox.max.x) ? -ox : ox;
+            else pos.z += (pBox.min.z + pBox.max.z < doorBox.min.z + doorBox.max.z) ? -oz : oz;
             continue;
         }
-        float angle=_doorAnim.count(dp)?_doorAnim.at(dp).angle:glm::half_pi<float>();
-        float hingeX=(float)dp.x-Hw+Fw,hingeZ=(float)dp.z,panelW=(Hw-Fw)*2.0f,thick=Hd*0.6f,margin=0.4f;
-        bool yOk=(pos.y<highY-Fw)&&(pos.y+PLAYER_HALF_H*2>lowY+Fw);
-        if(yOk){
-            float cosA=cosf(angle),sinA=sinf(angle);
-            float heX=fabsf(cosA)*panelW*0.5f+fabsf(sinA)*thick*0.5f;
-            float heZ=fabsf(sinA)*panelW*0.5f+fabsf(cosA)*thick*0.5f;
-            float cX=hingeX+cosA*panelW*0.5f,cZ=hingeZ+sinA*panelW*0.5f;
-            float pMinX=cX-heX-margin,pMaxX=cX+heX+margin;
-            float pMinZ=cZ-heZ-margin,pMaxZ=cZ+heZ+margin;
-            if(pos.x+PLAYER_HALF_W>pMinX&&pos.x-PLAYER_HALF_W<pMaxX&&pos.z+PLAYER_HALF_W>pMinZ&&pos.z-PLAYER_HALF_W<pMaxZ){
-                float ovlX=std::min(pos.x+PLAYER_HALF_W-pMinX,pMaxX-(pos.x-PLAYER_HALF_W));
-                float ovlZ=std::min(pos.z+PLAYER_HALF_W-pMinZ,pMaxZ-(pos.z-PLAYER_HALF_W));
-                if(ovlX>0&&ovlZ>0){float nx=ovlX/(heX*2+margin),nz=ovlZ/(heZ*2+margin);
-                    if(nx<nz)pos.x+=(pos.x<cX)?-ovlX:ovlX;
-                    else pos.z+=(pos.z<cZ)?-ovlZ:ovlZ;}
+        float angle = _doorAnim.count(dp) ? _doorAnim.at(dp).angle : glm::half_pi<float>();
+        float hingeX = (float)dp.x - Hw + Fw, hingeZ = (float)dp.z, panelW = (Hw - Fw) * 2.0f, thick = Hd * 0.6f, margin = 0.4f;
+        bool yOk = (pos.y < highY - Fw) && (pos.y + PLAYER_HALF_H * 2 > lowY + Fw);
+        if (yOk) {
+            float cosA = cosf(angle), sinA = sinf(angle);
+            float heX = fabsf(cosA) * panelW * 0.5f + fabsf(sinA) * thick * 0.5f;
+            float heZ = fabsf(sinA) * panelW * 0.5f + fabsf(cosA) * thick * 0.5f;
+            float cX = hingeX + cosA * panelW * 0.5f, cZ = hingeZ + sinA * panelW * 0.5f;
+            float pMinX = cX - heX - margin, pMaxX = cX + heX + margin;
+            float pMinZ = cZ - heZ - margin, pMaxZ = cZ + heZ + margin;
+            if (pos.x + PLAYER_HALF_W > pMinX &&
+                pos.x - PLAYER_HALF_W < pMaxX &&
+                pos.z + PLAYER_HALF_W > pMinZ &&
+                pos.z - PLAYER_HALF_W < pMaxZ) {
+                float ovlX = std::min(pos.x + PLAYER_HALF_W - pMinX, pMaxX - (pos.x - PLAYER_HALF_W));
+                float ovlZ = std::min(pos.z + PLAYER_HALF_W - pMinZ, pMaxZ - (pos.z - PLAYER_HALF_W));
+                if (ovlX > 0 && ovlZ > 0) {
+                    float nx = ovlX / (heX * 2 + margin), nz = ovlZ / (heZ * 2 + margin);
+                    if (nx < nz)pos.x += (pos.x < cX) ? -ovlX : ovlX;
+                    else pos.z += (pos.z < cZ) ? -ovlZ : ovlZ;
+                }
             }
         }
-        AABB pBox2=AABB::fromMinMax(pos-glm::vec3(PLAYER_HALF_W,0,PLAYER_HALF_W),pos+glm::vec3(PLAYER_HALF_W,PLAYER_HALF_H*2,PLAYER_HALF_W));
-        AABB lb=AABB::fromMinMax(glm::vec3(dp.x-Hw,lowY,dp.z-Hd),glm::vec3(dp.x-Hw+Fw,highY,dp.z+Hd));if(lb.overlaps(pBox2))pos.x=dp.x-Hw+Fw+PLAYER_HALF_W;
-        AABB rb=AABB::fromMinMax(glm::vec3(dp.x+Hw-Fw,lowY,dp.z-Hd),glm::vec3(dp.x+Hw,highY,dp.z+Hd));if(rb.overlaps(pBox2))pos.x=dp.x+Hw-Fw-PLAYER_HALF_W;
+        AABB pBox2 = AABB::fromMinMax(
+            pos - glm::vec3(PLAYER_HALF_W, 0, PLAYER_HALF_W),
+            pos + glm::vec3(PLAYER_HALF_W, PLAYER_HALF_H * 2, PLAYER_HALF_W));
+        AABB lb = AABB::fromMinMax(
+            glm::vec3(dp.x - Hw, lowY, dp.z - Hd),
+            glm::vec3(dp.x - Hw + Fw, highY, dp.z + Hd));
+        if (lb.overlaps(pBox2)) pos.x = dp.x - Hw + Fw + PLAYER_HALF_W;
+        AABB rb = AABB::fromMinMax(
+            glm::vec3(dp.x + Hw - Fw, lowY, dp.z - Hd),
+            glm::vec3(dp.x + Hw, highY, dp.z + Hd));
+        if (rb.overlaps(pBox2)) pos.x = dp.x + Hw - Fw - PLAYER_HALF_W;
         // bottom threshold removed: player should walk through doorway freely
-        AABB tb=AABB::fromMinMax(glm::vec3(dp.x-Hw+Fw,highY-Fw,dp.z-Hd),glm::vec3(dp.x+Hw-Fw,highY,dp.z+Hd));if(tb.overlaps(pBox2))pos.y=highY-Fw-PLAYER_HALF_H*2;
+        AABB tb = AABB::fromMinMax(
+            glm::vec3(dp.x - Hw + Fw, highY - Fw, dp.z - Hd),
+            glm::vec3(dp.x + Hw - Fw, highY, dp.z + Hd));
+        if (tb.overlaps(pBox2)) pos.y = highY - Fw - PLAYER_HALF_H * 2;
     }
     return onGround;
 }
@@ -1750,7 +2020,7 @@ void MinecraftGame::drawBlocks(const glm::mat4& proj, const glm::mat4& view) {
     // Transparent pass
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
-    int transTypes[] = {BT_WATER, BT_LEAVES, BT_GLASS, BT_GLOWSTONE, BT_SNOW};
+    int transTypes[] = { BT_WATER, BT_LEAVES, BT_GLASS, BT_GLOWSTONE, BT_SNOW };
     for (int ti = 0; ti < 5; ++ti) {
         int bt = transTypes[ti];
         if (posBuf[bt].empty()) continue;
@@ -1773,7 +2043,7 @@ void MinecraftGame::drawBlocks(const glm::mat4& proj, const glm::mat4& view) {
         if (!po.mesh) continue;
         glm::vec3 p = glm::vec3(kv.first);
         auto model = glm::translate(glm::mat4(1), p + glm::vec3(0, 1.0f, 0))
-                   * glm::scale(glm::mat4(1), glm::vec3(po.scale));
+            * glm::scale(glm::mat4(1), glm::vec3(po.scale));
         PhongParams op = makePhongParams(camPos);
         op.shadowsOn = _shadowsOn;
         drawTexturedLit(_texLitShader, po.mesh.get(), model, 0,
@@ -1782,59 +2052,112 @@ void MinecraftGame::drawBlocks(const glm::mat4& proj, const glm::mat4& view) {
 }
 
 void MinecraftGame::drawDoors(const glm::mat4& proj, const glm::mat4& view) {
-    const float Fw=0.12f, Hd=0.35f, Hw2=0.88f, Hh2=2.88f, Pw=1.76f, Ph=5.76f, Pd=0.35f;
-    glm::vec3 camPos=_firstPerson?(_playerPos+glm::vec3(0,1.7f,0)):_fc.position();
-    PhongParams pp=makePhongParams(camPos); pp.shadowsOn=_shadowsOn;
-    auto drawCube=[&](float cx,float cy,float cz,float sx,float sy,float sz,glm::vec3 col){
-        drawLit(_litShader,_cubeMesh.get(),glm::translate(glm::mat4(1),glm::vec3(cx,cy,cz))*glm::scale(glm::mat4(1),glm::vec3(sx,sy,sz)),col,proj,view,pp);
+    const float Fw = 0.12f;
+    const float Hd = 0.35f;
+    const float Hw2 = 0.88f;
+    const float Hh2 = 2.88f;
+    const float Pw = 1.76f;
+    const float Ph = 5.76f;
+    const float Pd = 0.35f;
+    glm::vec3 camPos = _firstPerson ? (_playerPos + glm::vec3(0, 1.7f, 0)) : _fc.position();
+    PhongParams pp = makePhongParams(camPos);
+    pp.shadowsOn = _shadowsOn;
+    auto drawCube = [&](float cx, float cy, float cz, float sx, float sy, float sz, glm::vec3 col) {
+        drawLit(
+            _litShader,
+            _cubeMesh.get(),
+            glm::translate(glm::mat4(1), glm::vec3(cx, cy, cz)) *
+                glm::scale(glm::mat4(1), glm::vec3(sx, sy, sz)),
+            col,
+            proj,
+            view,
+            pp);
     };
-    for(auto& kv:_blocks){
-        if(kv.second!=BT_DOOR)continue;
-        glm::ivec3 dp=kv.first; float cy=(float)dp.y+2.5f;
-        drawCube(dp.x-1.0f+Fw*0.5f,cy,dp.z,Fw,6.0f,Hd*2.0f,glm::vec3(0.45f,0.25f,0.10f));
-        drawCube(dp.x+1.0f-Fw*0.5f,cy,dp.z,Fw,6.0f,Hd*2.0f,glm::vec3(0.45f,0.25f,0.10f));
-        drawCube(dp.x,cy-3.0f+Fw*0.5f,dp.z,Hw2*2.0f,Fw,Hd*2.0f,glm::vec3(0.45f,0.25f,0.10f));
-        drawCube(dp.x,cy+3.0f-Fw*0.5f,dp.z,Hw2*2.0f,Fw,Hd*2.0f,glm::vec3(0.45f,0.25f,0.10f));
-        float angle=_doorAnim.count(dp)?_doorAnim.at(dp).angle:_doorOpen.count(dp)?glm::half_pi<float>():0.0f;
-        float hingeX=dp.x-1.0f+Fw;
-        auto pModel=glm::translate(glm::mat4(1),glm::vec3(hingeX,cy,dp.z))
-                    *glm::rotate(glm::mat4(1),angle,glm::vec3(0,1,0))
-                    *glm::translate(glm::mat4(1),glm::vec3(Pw*0.5f,0,0))
-                    *glm::scale(glm::mat4(1),glm::vec3(Pw,Ph,Pd*2.0f));
-        drawLit(_litShader,_cubeMesh.get(),pModel,glm::vec3(0.75f,0.50f,0.25f),proj,view,pp);
+    for (auto& kv : _blocks) {
+        if (kv.second != BT_DOOR)continue;
+        glm::ivec3 dp = kv.first;
+        float cy = (float)dp.y + 2.5f;
+        drawCube(
+            dp.x - 1.0f + Fw * 0.5f,
+            cy,
+            dp.z,
+            Fw,
+            6.0f,
+            Hd * 2.0f,
+            glm::vec3(0.45f, 0.25f, 0.10f));
+        drawCube(
+            dp.x + 1.0f - Fw * 0.5f,
+            cy,
+            dp.z,
+            Fw,
+            6.0f,
+            Hd * 2.0f,
+            glm::vec3(0.45f, 0.25f, 0.10f));
+        drawCube(
+            dp.x,
+            cy - 3.0f + Fw * 0.5f,
+            dp.z,
+            Hw2 * 2.0f,
+            Fw,
+            Hd * 2.0f,
+            glm::vec3(0.45f, 0.25f, 0.10f));
+        drawCube(
+            dp.x,
+            cy + 3.0f - Fw * 0.5f,
+            dp.z,
+            Hw2 * 2.0f,
+            Fw,
+            Hd * 2.0f,
+            glm::vec3(0.45f, 0.25f, 0.10f));
+        float angle = _doorAnim.count(dp)
+            ? _doorAnim.at(dp).angle
+            : _doorOpen.count(dp) ? glm::half_pi<float>() : 0.0f;
+        float hingeX = dp.x - 1.0f + Fw;
+        auto pModel = glm::translate(glm::mat4(1), glm::vec3(hingeX, cy, dp.z))
+            * glm::rotate(glm::mat4(1), angle, glm::vec3(0, 1, 0))
+            * glm::translate(glm::mat4(1), glm::vec3(Pw * 0.5f, 0, 0))
+            * glm::scale(glm::mat4(1), glm::vec3(Pw, Ph, Pd * 2.0f));
+        drawLit(
+            _litShader,
+            _cubeMesh.get(),
+            pModel,
+            glm::vec3(0.75f, 0.50f, 0.25f),
+            proj,
+            view,
+            pp);
     }
 }
 
 void MinecraftGame::drawCharacter(const glm::mat4& proj, const glm::mat4& view) {
     auto model = glm::translate(glm::mat4(1), _playerPos + glm::vec3(0, 0.78f, 0))
-               * glm::rotate(glm::mat4(1), _playerYaw, glm::vec3(0, 1, 0));
+        * glm::rotate(glm::mat4(1), _playerYaw, glm::vec3(0, 1, 0));
     _shader.use();
     _shader.setMatrices(proj, view, model);
     _shader.setBoneMatrices(_builder.skeleton().finalMatrices());
     setLight();
 
-    auto drawPart=[&](const HumanoidBuilder::PartRange& r, glm::vec3 col){
-        if(r.count==0)return;
+    auto drawPart = [&](const HumanoidBuilder::PartRange& r, glm::vec3 col) {
+        if (r.count == 0)return;
         _shader.setColor(col);
         _mesh->drawRange(r.start, r.count);
-    };
+        };
 
     // === Steve colors ===
     // Hair: dark brown (draw before head so head skin covers face area)
-    drawPart(_builder.hair,       glm::vec3(0.29f, 0.17f, 0.09f)); // #492B18
+    drawPart(_builder.hair, glm::vec3(0.29f, 0.17f, 0.09f)); // #492B18
 
     // Head & nose: Steve skin tone
-    drawPart(_builder.headRange,  glm::vec3(0.77f, 0.56f, 0.29f)); // #C4904A
-    drawPart(_builder.faceNose,   glm::vec3(0.77f, 0.56f, 0.29f));
+    drawPart(_builder.headRange, glm::vec3(0.77f, 0.56f, 0.29f)); // #C4904A
+    drawPart(_builder.faceNose, glm::vec3(0.77f, 0.56f, 0.29f));
 
     // Eyes: near-black
-    drawPart(_builder.faceEyes,   glm::vec3(0.10f, 0.10f, 0.20f)); // #1A1A32
+    drawPart(_builder.faceEyes, glm::vec3(0.10f, 0.10f, 0.20f)); // #1A1A32
 
     // Mouth: dark red-brown
-    drawPart(_builder.faceMouth,  glm::vec3(0.37f, 0.11f, 0.11f)); // #5E1C1C
+    drawPart(_builder.faceMouth, glm::vec3(0.37f, 0.11f, 0.11f)); // #5E1C1C
 
     // Body: Steve blue shirt
-    drawPart(_builder.bodyRange,  glm::vec3(0.24f, 0.43f, 0.63f)); // #3C6EA0
+    drawPart(_builder.bodyRange, glm::vec3(0.24f, 0.43f, 0.63f)); // #3C6EA0
 
     // Arms: sleeves (blue) + forearms (skin)
     drawPart(_builder.armL_upper, glm::vec3(0.24f, 0.43f, 0.63f));
@@ -1886,7 +2209,8 @@ void MinecraftGame::drawUI() {
 
     if (_inventoryOpen) {
         drawInventory();
-    } else {
+    }
+    else {
         // Hotbar — bottom center (scrollable, 8 slots visible)
         int placableCount = BT_COUNT - 1;
         static int hotbarScroll = 0;
@@ -1898,9 +2222,14 @@ void MinecraftGame::drawUI() {
         float btnW = 70.0f;
         float gap = 4.0f;
         float barW = visSlots * btnW + (visSlots - 1) * gap + 30;
-        ImGui::SetNextWindowPos(ImVec2(_windowWidth * 0.5f - barW * 0.5f, (float)_windowHeight - 70), ImGuiCond_Always);
+        ImGui::SetNextWindowPos(
+            ImVec2(_windowWidth * 0.5f - barW * 0.5f, (float)_windowHeight - 70),
+            ImGuiCond_Always);
         ImGui::SetNextWindowSize(ImVec2(barW, 60));
-        ImGui::Begin("Hotbar", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+        ImGui::Begin(
+            "Hotbar",
+            nullptr,
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
 
         // Scroll arrows
         if (ImGui::ArrowButton("##left", ImGuiDir_Left)) hotbarScroll--;
@@ -1915,8 +2244,12 @@ void MinecraftGame::drawUI() {
             glm::vec3 bc = blockTypeColor(bt);
             ImVec4 c(bc.x, bc.y, bc.z, _selectedBlock == bt ? 1.0f : 0.65f);
             ImGui::PushStyleColor(ImGuiCol_Button, c);
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(c.x * 1.15f, c.y * 1.15f, c.z * 1.15f, 1));
-            ImGui::PushStyleColor(ImGuiCol_ButtonActive, ImVec4(c.x * 0.8f, c.y * 0.8f, c.z * 0.8f, 1));
+            ImGui::PushStyleColor(
+                ImGuiCol_ButtonHovered,
+                ImVec4(c.x * 1.15f, c.y * 1.15f, c.z * 1.15f, 1));
+            ImGui::PushStyleColor(
+                ImGuiCol_ButtonActive,
+                ImVec4(c.x * 0.8f, c.y * 0.8f, c.z * 0.8f, 1));
             char label[48];
             snprintf(label, sizeof(label), "%s\nx%d", blockTypeName(bt), _blockCounts[bt]);
             if (ImGui::Button(label, ImVec2(btnW, 42))) {
@@ -1973,7 +2306,10 @@ void MinecraftGame::drawUI() {
     {
         ImGui::SetNextWindowPos(ImVec2((float)_windowWidth - 85, 10), ImGuiCond_Always);
         ImGui::SetNextWindowSize(ImVec2(75, 30));
-        ImGui::Begin("InvBtn", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+        ImGui::Begin(
+            "InvBtn",
+            nullptr,
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
         if (ImGui::Button(_inventoryOpen ? "Close" : "Bag[E]", ImVec2(65, 20)))
             _inventoryOpen = !_inventoryOpen;
         ImGui::End();
@@ -1983,7 +2319,10 @@ void MinecraftGame::drawUI() {
     {
         ImGui::SetNextWindowPos(ImVec2((float)_windowWidth - 85, 45), ImGuiCond_Always);
         ImGui::SetNextWindowSize(ImVec2(75, 30));
-        ImGui::Begin("SetBtn", nullptr, ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
+        ImGui::Begin(
+            "SetBtn",
+            nullptr,
+            ImGuiWindowFlags_NoTitleBar | ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoMove);
         if (ImGui::Button(_settingsOpen ? "Hide[L]" : "Set[L]", ImVec2(65, 20)))
             _settingsOpen = !_settingsOpen;
         ImGui::End();
@@ -1991,7 +2330,10 @@ void MinecraftGame::drawUI() {
 
     if (_settingsOpen) {
         ImGui::SetNextWindowPos(ImVec2((float)_windowWidth - 285, 85), ImGuiCond_FirstUseEver);
-        ImGui::Begin("Settings (Phong Lighting)", &_settingsOpen, ImGuiWindowFlags_AlwaysAutoResize);
+        ImGui::Begin(
+            "Settings (Phong Lighting)",
+            &_settingsOpen,
+            ImGuiWindowFlags_AlwaysAutoResize);
 
         ImGui::Text("Directional Sun");
         ImGui::SliderFloat("Sun X", &_sunDir.x, -1.0f, 1.0f);
@@ -2027,13 +2369,13 @@ void MinecraftGame::drawUI() {
         ImGui::Checkbox("Snow", &_snowOn);
 
         if (ImGui::Button("Reset Light")) {
-            _sunDir = {0.5f, 1.0f, 0.3f};
-            _sunColor = {1.0f, 0.95f, 0.85f};
+            _sunDir = { 0.5f, 1.0f, 0.3f };
+            _sunColor = { 1.0f, 0.95f, 0.85f };
             _ambient = 0.3f;
             _shininess = 32.0f;
-            _specColor = {1.0f, 1.0f, 1.0f};
-            _ptPos = {3, 4, -2};
-            _ptColor = {0.3f, 0.5f, 1.0f};
+            _specColor = { 1.0f, 1.0f, 1.0f };
+            _ptPos = { 3, 4, -2 };
+            _ptColor = { 0.3f, 0.5f, 1.0f };
             _ptIntensity = 5.0f;
             _ptAttenConst = 1.0f;
             _ptAttenLinear = 0.09f;
@@ -2051,7 +2393,11 @@ void MinecraftGame::drawUI() {
 void MinecraftGame::drawInventory() {
     int placableCount = BT_COUNT - 1;
     float invW = 560, invH = 440;
-    ImGui::SetNextWindowPos(ImVec2(_windowWidth * 0.5f - invW * 0.5f, _windowHeight * 0.5f - invH * 0.5f), ImGuiCond_Always);
+    ImGui::SetNextWindowPos(
+        ImVec2(
+            _windowWidth * 0.5f - invW * 0.5f,
+            _windowHeight * 0.5f - invH * 0.5f),
+        ImGuiCond_Always);
     ImGui::SetNextWindowSize(ImVec2(invW, invH));
     ImGui::Begin("Inventory", &_inventoryOpen,
         ImGuiWindowFlags_NoResize | ImGuiWindowFlags_NoCollapse);
@@ -2074,7 +2420,9 @@ void MinecraftGame::drawInventory() {
     }
 
     ImGui::Separator();
-    ImGui::TextColored(ImVec4(0.3f, 1.0f, 0.5f, 1), "Selected: %s  |  E=Close  1-9=QuickSlot  Wheel=Scroll",
+    ImGui::TextColored(
+        ImVec4(0.3f, 1.0f, 0.5f, 1),
+        "Selected: %s  |  E=Close  1-9=QuickSlot  Wheel=Scroll",
         blockTypeName(_selectedBlock));
 
     ImGui::BeginChild("##invGrid", ImVec2(0, 260), true);
@@ -2116,46 +2464,60 @@ void MinecraftGame::drawInventory() {
     for (int i = 1; i < BT_COUNT; i++) totalBlocks += _blockCounts[i];
     ImGui::Text("Total blocks in world: %d  |  Types placed: %d",
         totalBlocks,
-        [&](){ int n=0; for(int i=1;i<BT_COUNT;i++) if(_blockCounts[i]>0) n++; return n; }());
+        [&]() { int n = 0; for (int i = 1; i < BT_COUNT; i++) if (_blockCounts[i] > 0) n++; return n; }());
 
     // === OBJ Models ===
     ImGui::Separator();
-    ImGui::TextColored(ImVec4(1,0.8f,0.3f,1), "OBJ Models (I=cycle, P=place, X=export)");
-    if(!_objFiles.empty()){
-        for(int j=0;j<(int)_objFiles.size();j++){
-            if(j%4!=0) ImGui::SameLine();
-            bool sel=(j==_selectedObj);
-            char oblbl[64]; snprintf(oblbl,sizeof(oblbl),"%s%s",sel?"> ":"  ",_objFiles[j].c_str());
-            ImVec4 oc=sel?ImVec4(1,0.7f,0.2f,1):ImVec4(0.5f,0.5f,0.5f,1);
-            ImGui::PushStyleColor(ImGuiCol_Button,oc);
-            ImGui::PushStyleColor(ImGuiCol_ButtonHovered,ImVec4(oc.x*1.2f,oc.y*1.2f,oc.z*1.2f,1));
-            if(ImGui::Button(oblbl,ImVec2(90,25))) _selectedObj=j;
+    ImGui::TextColored(ImVec4(1, 0.8f, 0.3f, 1), "OBJ Models (I=cycle, P=place, X=export)");
+    if (!_objFiles.empty()) {
+        for (int j = 0; j < (int)_objFiles.size(); j++) {
+            if (j % 4 != 0) ImGui::SameLine();
+            bool sel = (j == _selectedObj);
+            char oblbl[64]; snprintf(oblbl, sizeof(oblbl), "%s%s", sel ? "> " : "  ", _objFiles[j].c_str());
+            ImVec4 oc = sel ? ImVec4(1, 0.7f, 0.2f, 1) : ImVec4(0.5f, 0.5f, 0.5f, 1);
+            ImGui::PushStyleColor(ImGuiCol_Button, oc);
+            ImGui::PushStyleColor(ImGuiCol_ButtonHovered, ImVec4(oc.x * 1.2f, oc.y * 1.2f, oc.z * 1.2f, 1));
+            if (ImGui::Button(oblbl, ImVec2(90, 25))) _selectedObj = j;
             ImGui::PopStyleColor(2);
         }
-    }else{ImGui::TextDisabled("No .obj files in media/obj/");}
+    }
+    else { ImGui::TextDisabled("No .obj files in media/obj/"); }
     ImGui::Separator();
-    if(ImGui::Button("Export Scene as OBJ",ImVec2(180,28))){
+    if (ImGui::Button("Export Scene as OBJ", ImVec2(180, 28))) {
         Element allBlocks;
-        for(auto& kv:_blocks){if(kv.second==BT_AIR)continue;
-            auto cube=Primitives::CreateCube(1.0f); glm::vec3 off=glm::vec3(kv.first);
-            uint32_t base=(uint32_t)allBlocks.vertices.size();
-            for(auto& v:cube.vertices){auto v2=v;v2.position+=off;allBlocks.vertices.push_back(v2);}
-            for(auto idx:cube.indices)allBlocks.indices.push_back(base+idx);
+        for (auto& kv : _blocks) {
+            if (kv.second == BT_AIR) {
+                continue;
+            }
+
+            auto cube = Primitives::CreateCube(1.0f); glm::vec3 off = glm::vec3(kv.first);
+            uint32_t base = (uint32_t)allBlocks.vertices.size();
+            for (auto& v : cube.vertices) {
+                auto v2 = v; v2.position += off; allBlocks.vertices.push_back(v2);
+            }
+            for (auto idx : cube.indices) {
+                allBlocks.indices.push_back(base + idx);
+            }
         }
-        if(!allBlocks.vertices.empty()){std::filesystem::create_directories("media/obj");ObjLoader::Save("media/obj/exported_scene.obj",allBlocks);_screenshotFlash=1.5f;}
+
+        if (!allBlocks.vertices.empty()) {
+            std::filesystem::create_directories("media/obj");
+            ObjLoader::Save("media/obj/exported_scene.obj", allBlocks);
+            _screenshotFlash = 1.5f;
+        }
     }
 
-ImGui::End();
+    ImGui::End();
 }
 
 // ============================================================
 void MinecraftGame::renderFrame() {
     _animator.update(_deltaTime);
 
-    for(auto it=_doorAnim.begin();it!=_doorAnim.end();){
-        auto& da=it->second;float diff=da.target-da.angle;
-        if(fabsf(diff)<0.01f){da.angle=da.target;if(da.target>1.5f)_doorOpen[it->first]=true;it=_doorAnim.erase(it);}
-        else{da.angle+=(diff>0?1:-1)*std::min(da.speed*_deltaTime,fabsf(diff));++it;}
+    for (auto it = _doorAnim.begin(); it != _doorAnim.end();) {
+        auto& da = it->second; float diff = da.target - da.angle;
+        if (fabsf(diff) < 0.01f) { da.angle = da.target; if (da.target > 1.5f)_doorOpen[it->first] = true; it = _doorAnim.erase(it); }
+        else { da.angle += (diff > 0 ? 1 : -1) * std::min(da.speed * _deltaTime, fabsf(diff)); ++it; }
     }
 
     // === Shadow pass ===
@@ -2174,9 +2536,10 @@ void MinecraftGame::renderFrame() {
     glm::mat4 view;
     if (_firstPerson) {
         glm::vec3 eye = _playerPos + glm::vec3(0, 1.7f, 0)
-                      + glm::vec3(fpForward().x, 0, fpForward().z) * 0.15f;
+            + glm::vec3(fpForward().x, 0, fpForward().z) * 0.15f;
         view = glm::lookAt(eye, eye + fpForward(), glm::vec3(0, 1, 0));
-    } else {
+    }
+    else {
         view = _fc.viewMatrix();
     }
 
@@ -2205,7 +2568,9 @@ void MinecraftGame::renderFrame() {
     {
         glm::vec3 camPos = _firstPerson ? (_playerPos + glm::vec3(0, 1.7f, 0)) : _fc.position();
         glm::vec3 earthPos(0, 10.0f, 0);
-        auto m = glm::translate(glm::mat4(1), earthPos) * glm::rotate(glm::mat4(1), _gameTime*0.3f, glm::vec3(0,1,0)) * glm::rotate(glm::mat4(1), -0.4f, glm::vec3(1,0,0));
+        auto m = glm::translate(glm::mat4(1), earthPos) *
+            glm::rotate(glm::mat4(1), _gameTime * 0.3f, glm::vec3(0, 1, 0)) *
+            glm::rotate(glm::mat4(1), -0.4f, glm::vec3(1, 0, 0));
         PhongParams ep = makePhongParams(camPos); ep.shadowsOn = _shadowsOn;
         drawTexturedLit(_texLitShader, _earthMesh.get(), m, 0, 1.0f, _earthTex, proj, view, ep);
     }
@@ -2217,16 +2582,23 @@ void MinecraftGame::renderFrame() {
         int n = (int)_primitiveMeshes.size();
         float orbitR = 3.0f;
         const float TPI = 6.283185307f;
-        glm::vec4 cols[] = {{0.9f,0.3f,0.3f,1},{0.3f,0.5f,0.9f,1},{0.3f,0.9f,0.4f,1},{0.9f,0.7f,0.2f,1},{0.7f,0.3f,0.9f,1},{0.9f,0.5f,0.5f,1}};
-        for(int i=0;i<n;i++){
-            float a = _gameTime*0.6f + (float)i/n*TPI;
+        glm::vec4 cols[] = {
+            {0.9f, 0.3f, 0.3f, 1},
+            {0.3f, 0.5f, 0.9f, 1},
+            {0.3f, 0.9f, 0.4f, 1},
+            {0.9f, 0.7f, 0.2f, 1},
+            {0.7f, 0.3f, 0.9f, 1},
+            {0.9f, 0.5f, 0.5f, 1}
+        };
+        for (int i = 0; i < n; i++) {
+            float a = _gameTime * 0.6f + (float)i / n * TPI;
             float tilt = (float)i * 0.5f;
             float rx = cosf(a) * orbitR;
             float rz = sinf(a) * orbitR * cosf(tilt);
             float ry = sinf(a) * orbitR * sinf(tilt);
             glm::vec3 p = earthPos + glm::vec3(rx, ry, rz);
             auto pm = glm::translate(glm::mat4(1), p)
-                     * glm::rotate(glm::mat4(1), _gameTime*0.8f+(float)i, glm::vec3(0.3f,1,0.2f));
+                * glm::rotate(glm::mat4(1), _gameTime * 0.8f + (float)i, glm::vec3(0.3f, 1, 0.2f));
             PhongParams pp = makePhongParams(camPos); pp.shadowsOn = _shadowsOn;
             drawLit(_litShader, _primitiveMeshes[i].get(), pm, cols[i], proj, view, pp);
         }
@@ -2235,7 +2607,7 @@ void MinecraftGame::renderFrame() {
     // Point light indicator — small bright cube at light position
     {
         auto ptModel = glm::translate(glm::mat4(1), _ptPos)
-                     * glm::scale(glm::mat4(1), glm::vec3(0.2f));
+            * glm::scale(glm::mat4(1), glm::vec3(0.2f));
         PhongParams ptPP;
         ptPP.sunColor = glm::vec3(0);  // no sun
         ptPP.ambient = glm::vec3(0.8f);
