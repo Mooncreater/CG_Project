@@ -3,7 +3,9 @@
 
 #include "../base/application.h"
 #include "../base/buffer.h"
+#include "../base/framebuffer.h"
 #include "../base/skybox.h"
+#include "../base/texture2d.h"
 #include "../base/vertex_array.h"
 #include "../animation/skeleton.h"
 #include "../animation/animation_clip.h"
@@ -165,10 +167,10 @@ private:
     SimpleLitShader _litShader;
     TexturedLitShader _texLitShader;
     std::unique_ptr<Mesh> _earthMesh;
-    GLuint _earthTex = 0;
+    std::unique_ptr<Texture2D> _earthTex;
 
     // Steve face texture overlay
-    GLuint _faceTex = 0;
+    std::unique_ptr<Texture2D> _faceTex;
     VertexArray _faceQuadVao;
     VertexBuffer _faceQuadVbo;
     IndexBuffer _faceQuadIbo;
@@ -191,7 +193,7 @@ private:
     bool _inventoryOpen = false;
     bool _settingsOpen = false;
     InstancedTexturedLitShader _instTexLitShader;
-    GLuint _blockAtlas = 0;
+    std::unique_ptr<Texture2D> _blockAtlas;
     static constexpr int ATLAS_SIZE = 1024;
     static constexpr int ATLAS_COLS = 8;
     static constexpr int TILE_PX = 128;
@@ -249,8 +251,8 @@ private:
     float _ptAttenQuad = 0.032f;
 
     // ===== Shadow mapping =====
-    GLuint _shadowFBO = 0;
-    GLuint _shadowMap = 0;
+    std::unique_ptr<Framebuffer> _shadowFBO;
+    std::unique_ptr<Texture2D> _shadowMap;
     static constexpr int SHADOW_RES = 2048;
     glm::mat4 _lightSpaceMatrix{1};
     float _shadowBias = 0.0005f;

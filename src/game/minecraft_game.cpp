@@ -303,10 +303,6 @@ MinecraftGame::MinecraftGame(const Options& o) : Application(o), _worldSeed(42) 
 }
 
 MinecraftGame::~MinecraftGame() {
-    if (_shadowFBO) glDeleteFramebuffers(1, &_shadowFBO);
-    if (_shadowMap) glDeleteTextures(1, &_shadowMap);
-    if (_blockAtlas) glDeleteTextures(1, &_blockAtlas);
-    if (_faceTex) glDeleteTextures(1, &_faceTex);
     ImGui_ImplOpenGL3_Shutdown();
     ImGui_ImplGlfw_Shutdown();
     ImGui::DestroyContext();
@@ -458,24 +454,28 @@ void MinecraftGame::placeTree(int bx, int by, int bz) {
 // Shadow Mapping
 // ============================================================
 void MinecraftGame::initShadowMap() {
-    glGenFramebuffers(1, &_shadowFBO);
-    glGenTextures(1, &_shadowMap);
-    glBindTexture(GL_TEXTURE_2D, _shadowMap);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_DEPTH_COMPONENT,
-        SHADOW_RES, SHADOW_RES, 0, GL_DEPTH_COMPONENT, GL_FLOAT, nullptr);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
-    float borderColor[] = { 1, 1, 1, 1 };
-    glTexParameterfv(GL_TEXTURE_2D, GL_TEXTURE_BORDER_COLOR, borderColor);
+    _shadowFBO = std::make_unique<Framebuffer>();
+    _shadowMap = std::make_unique<Texture2D>(
+        GL_DEPTH_COMPONENT32F,
+        SHADOW_RES,
+        SHADOW_RES,
+        GL_DEPTH_COMPONENT,
+        GL_FLOAT);
+    _shadowMap->bind();
+    _shadowMap->setParamterInt(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+    _shadowMap->setParamterInt(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    _shadowMap->setParamterInt(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_BORDER);
+    _shadowMap->setParamterInt(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_BORDER);
+    static const std::vector<float> borderColor = {1.0f, 1.0f, 1.0f, 1.0f};
+    _shadowMap->setParamterFloatVector(GL_TEXTURE_BORDER_COLOR, borderColor);
+    _shadowMap->unbind();
     // Manual PCF in shader (5x5 kernel) — use NEAREST for correct depth sampling — we do manual comparison in shader
 
-    glBindFramebuffer(GL_FRAMEBUFFER, _shadowFBO);
-    glFramebufferTexture2D(GL_FRAMEBUFFER, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D, _shadowMap, 0);
-    glDrawBuffer(GL_NONE);
-    glReadBuffer(GL_NONE);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    _shadowFBO->bind();
+    _shadowFBO->attachTexture2D(*_shadowMap, GL_DEPTH_ATTACHMENT, GL_TEXTURE_2D);
+    _shadowFBO->drawBuffer(GL_NONE);
+    _shadowFBO->readBuffer(GL_NONE);
+    _shadowFBO->unbind();
 
     // Simple depth-only shader
     const char* shadowVS = R"(#version 330 core
@@ -508,7 +508,7 @@ void MinecraftGame::renderShadowPass() {
     _lightSpaceMatrix = lightProj * lightView;
 
     glViewport(0, 0, SHADOW_RES, SHADOW_RES);
-    glBindFramebuffer(GL_FRAMEBUFFER, _shadowFBO);
+    _shadowFBO->bind();
     glClear(GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
     glEnable(GL_CULL_FACE);
@@ -532,7 +532,7 @@ void MinecraftGame::renderShadowPass() {
 
     if (shadowPos.empty()) {
         glCullFace(GL_BACK);
-        glBindFramebuffer(GL_FRAMEBUFFER, 0);
+        _shadowFBO->unbind();
         return;
     }
 
@@ -563,7 +563,7 @@ void MinecraftGame::renderShadowPass() {
 
     glCullFace(GL_BACK);
     glDisable(GL_CULL_FACE);
-    glBindFramebuffer(GL_FRAMEBUFFER, 0);
+    _shadowFBO->unbind();
 }
 
 PhongParams MinecraftGame::makePhongParams(const glm::vec3& camPos) const {
@@ -581,7 +581,7 @@ PhongParams MinecraftGame::makePhongParams(const glm::vec3& camPos) const {
     pp.ptAttenLinear = _ptAttenLinear;
     pp.ptAttenQuad = _ptAttenQuad;
     pp.lightSpace = _lightSpaceMatrix;
-    pp.shadowMap = _shadowMap;
+    pp.shadowMap = _shadowMap ? _shadowMap->getHandle() : 0;
     pp.shadowBias = _shadowBias;
     pp.shadowsOn = _shadowsOn;
     return pp;
@@ -967,14 +967,19 @@ void MinecraftGame::buildTextureAtlas() {
     }
 
     // Upload to OpenGL
-    glGenTextures(1, &_blockAtlas);
-    glBindTexture(GL_TEXTURE_2D, _blockAtlas);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, SZ, SZ, 0, GL_RGBA, GL_UNSIGNED_BYTE, pixels.data());
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);  // pixel-art: no blur
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    _blockAtlas = std::make_unique<Texture2D>(
+        GL_RGBA,
+        SZ,
+        SZ,
+        GL_RGBA,
+        GL_UNSIGNED_BYTE,
+        pixels.data());
+    _blockAtlas->bind();
+    _blockAtlas->setParamterInt(GL_TEXTURE_MIN_FILTER, GL_NEAREST);  // pixel-art: no blur
+    _blockAtlas->setParamterInt(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+    _blockAtlas->setParamterInt(GL_TEXTURE_WRAP_S, GL_REPEAT);
+    _blockAtlas->setParamterInt(GL_TEXTURE_WRAP_T, GL_REPEAT);
+    _blockAtlas->unbind();
 }
 
 // ============================================================
@@ -989,23 +994,33 @@ void MinecraftGame::buildEarthTexture() {
         for (int i = 0; i < 64 * 64; i++) {
             fb[i * 4] = 40; fb[i * 4 + 1] = 100; fb[i * 4 + 2] = 200;
         }
-        glGenTextures(1, &_earthTex);
-        glBindTexture(GL_TEXTURE_2D, _earthTex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 64, 64, 0, GL_RGBA, GL_UNSIGNED_BYTE, fb.data());
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        _earthTex = std::make_unique<Texture2D>(
+            GL_RGBA,
+            64,
+            64,
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            fb.data());
+        _earthTex->bind();
+        _earthTex->setParamterInt(GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+        _earthTex->setParamterInt(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+        _earthTex->unbind();
         return;
     }
-    glGenTextures(1, &_earthTex);
-    glBindTexture(GL_TEXTURE_2D, _earthTex);
-    glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
-    glGenerateMipmap(GL_TEXTURE_2D);
-    glBindTexture(GL_TEXTURE_2D, 0);
+    _earthTex = std::make_unique<Texture2D>(
+        GL_RGBA,
+        w,
+        h,
+        GL_RGBA,
+        GL_UNSIGNED_BYTE,
+        data);
+    _earthTex->bind();
+    _earthTex->setParamterInt(GL_TEXTURE_MIN_FILTER, GL_LINEAR_MIPMAP_LINEAR);
+    _earthTex->setParamterInt(GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    _earthTex->setParamterInt(GL_TEXTURE_WRAP_S, GL_REPEAT);
+    _earthTex->setParamterInt(GL_TEXTURE_WRAP_T, GL_REPEAT);
+    _earthTex->generateMipmap();
+    _earthTex->unbind();
     stbi_image_free(data);
 }
 
@@ -1046,14 +1061,19 @@ void MinecraftGame::initFaceQuad() {
     unsigned char* data = stbi_load("media/texture/miscellaneous/steve_face.png", &w, &h, &c, 4);
     if (!data) data = stbi_load("../../media/texture/miscellaneous/steve_face.png", &w, &h, &c, 4);
     if (data) {
-        glGenTextures(1, &_faceTex);
-        glBindTexture(GL_TEXTURE_2D, _faceTex);
-        glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, w, h, 0, GL_RGBA, GL_UNSIGNED_BYTE, data);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
-        glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
-        glBindTexture(GL_TEXTURE_2D, 0);
+        _faceTex = std::make_unique<Texture2D>(
+            GL_RGBA,
+            w,
+            h,
+            GL_RGBA,
+            GL_UNSIGNED_BYTE,
+            data);
+        _faceTex->bind();
+        _faceTex->setParamterInt(GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+        _faceTex->setParamterInt(GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+        _faceTex->setParamterInt(GL_TEXTURE_WRAP_S, GL_CLAMP_TO_EDGE);
+        _faceTex->setParamterInt(GL_TEXTURE_WRAP_T, GL_CLAMP_TO_EDGE);
+        _faceTex->unbind();
         stbi_image_free(data);
     }
 
@@ -1876,7 +1896,7 @@ void MinecraftGame::drawDroppedItems(const glm::mat4& proj, const glm::mat4& vie
 
         int baseTile = (di.blockType - 1) * 3;
         drawTexturedLit(_texLitShader, _cubeMesh.get(), model, baseTile,
-            (float)ATLAS_COLS, _blockAtlas, proj, view, pp);
+            (float)ATLAS_COLS, _blockAtlas ? _blockAtlas->getHandle() : 0, proj, view, pp);
     }
 }
 
@@ -2014,7 +2034,7 @@ void MinecraftGame::drawBlocks(const glm::mat4& proj, const glm::mat4& view) {
         int baseTile = (bt - 1) * 3;
         drawTexturedLitInstanced(_instTexLitShader, _instancedCubeVao,
             indexCount, (int)posBuf[bt].size(), baseTile,
-            (float)ATLAS_COLS, _blockAtlas, proj, view, pp);
+            (float)ATLAS_COLS, _blockAtlas ? _blockAtlas->getHandle() : 0, proj, view, pp);
     }
 
     // Transparent pass
@@ -2034,7 +2054,7 @@ void MinecraftGame::drawBlocks(const glm::mat4& proj, const glm::mat4& view) {
         int baseTile = (bt - 1) * 3;
         drawTexturedLitInstanced(_instTexLitShader, _instancedCubeVao,
             indexCount, (int)posBuf[bt].size(), baseTile,
-            (float)ATLAS_COLS, _blockAtlas, proj, view, pp);
+            (float)ATLAS_COLS, _blockAtlas ? _blockAtlas->getHandle() : 0, proj, view, pp);
     }
     glDisable(GL_BLEND);
     // === Placed OBJ models ===
@@ -2047,7 +2067,7 @@ void MinecraftGame::drawBlocks(const glm::mat4& proj, const glm::mat4& view) {
         PhongParams op = makePhongParams(camPos);
         op.shadowsOn = _shadowsOn;
         drawTexturedLit(_texLitShader, po.mesh.get(), model, 0,
-            (float)ATLAS_COLS, _blockAtlas, proj, view, op);
+            (float)ATLAS_COLS, _blockAtlas ? _blockAtlas->getHandle() : 0, proj, view, op);
     }
 }
 
@@ -2189,7 +2209,7 @@ void MinecraftGame::drawCharacter(const glm::mat4& proj, const glm::mat4& view) 
             _faceShader->use();
             _faceShader->setUniformMat4("uMVP", mvp);
             glActiveTexture(GL_TEXTURE0);
-            glBindTexture(GL_TEXTURE_2D, _faceTex);
+            _faceTex->bind(0);
             _faceShader->setUniformInt("uTex", 0);
             _faceQuadVao.bind();
             glDrawElements(GL_TRIANGLES, 6, GL_UNSIGNED_INT, 0);
@@ -2572,7 +2592,16 @@ void MinecraftGame::renderFrame() {
             glm::rotate(glm::mat4(1), _gameTime * 0.3f, glm::vec3(0, 1, 0)) *
             glm::rotate(glm::mat4(1), -0.4f, glm::vec3(1, 0, 0));
         PhongParams ep = makePhongParams(camPos); ep.shadowsOn = _shadowsOn;
-        drawTexturedLit(_texLitShader, _earthMesh.get(), m, 0, 1.0f, _earthTex, proj, view, ep);
+        drawTexturedLit(
+            _texLitShader,
+            _earthMesh.get(),
+            m,
+            0,
+            1.0f,
+            _earthTex ? _earthTex->getHandle() : 0,
+            proj,
+            view,
+            ep);
     }
 
     // === Primitives orbiting Earth ===
